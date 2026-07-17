@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parcial — Árboles · Estructuras de Datos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:   #1c1c2e;
+  --paper: #fafaf7;
+  --muted: #6b6b80;
+  --rule:  #d5d4cc;
+  --red:   #c1121f;
+  --teal:  #1b7a6e;
+  --blue:  #1d5f84;
+}
+
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+/* ── COVER PAGE ─────────────────────────────────────────────── */
+.cover-page {
+  padding: 52px 64px 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 4px double var(--ink);
+  page-break-after: always;
+}
+
+.cover-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 22px;
+  border-bottom: 3px solid var(--ink);
+  margin-bottom: 22px;
+}
+
+.cover-left .kicker {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.cover-left h1 {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.cover-left .sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.cover-right {
+  text-align: right;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 2;
+}
+
+.fields {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.field-line {
+  border-bottom: 1px solid var(--ink);
+  height: 22px;
+}
+
+/* Summary table */
+.summary {
+  margin-top: auto;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.summary table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.summary th {
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.summary td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+
+.summary tr:last-child td { border-bottom: none; }
+
+.prob-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* ── PROBLEM PAGE ───────────────────────────────────────────── */
+.page {
+  padding: 38px 64px 44px;
+  min-height: 100vh;
+  page-break-before: always;
+}
+
+/* Problem header */
+.ph {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--rule);
+}
+
+.badge {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ph-text { flex: 1; }
+
+.ph-kicker {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.ph-title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.ph-pts {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Enunciado */
+.stmt {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 18px 24px;
+  background: #fff;
+  margin-bottom: 20px;
+  font-size: 15.5px;
+  line-height: 1.75;
+}
+
+.stmt strong { font-weight: 600; }
+.stmt em { font-style: italic; }
+
+.sig {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12.5px;
+  background: #f2f2ee;
+  padding: 9px 14px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-top: 12px;
+}
+
+/* Constraints */
+.ct-title, .ex-title {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 9px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 22px;
+}
+
+.chip {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  padding: 3px 11px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+/* Example row */
+.ex-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tree-card {
+  flex: 1;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.tree-card.full { flex: none; width: 100%; }
+
+.card-lbl {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.tree-card svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+.arr { font-size: 28px; color: #ccc; flex-shrink: 0; line-height: 1; }
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  justify-content: center;
+}
+
+.li { display: flex; align-items: center; gap: 5px; }
+
+.ld {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid #777;
+  flex-shrink: 0;
+}
+
+/* Result boxes */
+.res {
+  margin-top: 14px;
+  padding: 12px 18px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-size: 13px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.res-lbl {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.res code {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+}
+
+/* Note */
+.note {
+  margin-top: 18px;
+  padding: 12px 18px;
+  border-left: 3px solid;
+  border-radius: 0 4px 4px 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+@media print {
+  body { background: white; }
+  .page { min-height: 0; }
+  .page + .page { page-break-before: always; }
+}
+</style>
+</head>
+<body>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PROBLEMA 1 — Árbol Binario · Poda de Hijos Únicos
+══════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="ph">
+    <div class="badge" style="background:#c1121f">1</div>
+    <div class="ph-text">
+      <div class="ph-kicker">Árbol Binario · Eliminación</div>
+      <div class="ph-title">Poda de Hijos Únicos</div>
+    </div>
+    <div class="ph-pts">10 puntos</div>
+  </div>
+
+  <div class="stmt">
+    Dado un árbol binario y un entero <strong>k</strong>, elimine los <strong>k primeros nodos hijo único</strong> encontrados en un recorrido en <strong>preorden de izquierda a derecha</strong> (raíz → izquierda → derecha, por profundidad). Un nodo es <em>hijo único</em> si su padre tiene <em>exactamente un hijo</em>. Al eliminar un nodo hijo único, se elimina también todo su subárbol. Implemente la función:
+    <br>
+    <span class="sig">void eliminarHijosUnicos(NodoBinario* raiz, int k)</span>
+  </div>
+
+  <div class="ct-title">Restricciones</div>
+  <div class="chips">
+    <div class="chip">1 ≤ k ≤ n</div>
+    <div class="chip">n ≥ 1</div>
+    <div class="chip">Recorrido DFS preorden — raíz → izq → der (por profundidad)</div>
+    <div class="chip">Si hay menos de k hijos únicos, elimine todos los que haya</div>
+    <div class="chip">Libere la memoria de cada nodo eliminado</div>
+  </div>
+
+  <div class="ex-title">Ejemplo de ejecución — k = 2</div>
+  <div class="ex-row">
+
+    <!-- ÁRBOL ORIGINAL -->
+    <div class="tree-card">
+      <div class="card-lbl">Árbol original</div>
+      <svg viewBox="0 0 470 315" xmlns="http://www.w3.org/2000/svg" width="470" height="315">
+        <!-- Aristas -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="235" y1="54"  x2="115" y2="132"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="235" y1="54"  x2="355" y2="132"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="115" y1="132" x2="55"  y2="212"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="115" y1="132" x2="175" y2="212"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="355" y1="132" x2="415" y2="212"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="175" y1="212" x2="212" y2="290"/>
+        <!-- Nodos normales -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="235" cy="54"  r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="235" y="54">20</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="115" cy="132" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="115" y="132">8</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="355" cy="132" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="355" y="132">30</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="55"  cy="212" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="55" y="212">3</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="175" cy="212" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="175" y="212">12</text>
+        <!-- Hijos únicos → rojo -->
+        <circle fill="#e63946" stroke="#9b1f2a" stroke-width="2.2" cx="415" cy="212" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="415" y="212">35</text>
+        <circle fill="#e63946" stroke="#9b1f2a" stroke-width="2.2" cx="212" cy="290" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="212" y="290">15</text>
+        <!-- Marcadores de orden DFS: 15 se encuentra antes que 35 en preorden -->
+        <circle fill="#9b1f2a" cx="238" cy="272" r="12"/>
+        <text font-family="Georgia,serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="238" y="272">①</text>
+        <circle fill="#9b1f2a" cx="441" cy="194" r="12"/>
+        <text font-family="Georgia,serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="441" y="194">②</text>
+        <!-- Etiquetas de profundidad -->
+        <text font-family="Georgia,serif" font-size="9.5" fill="#aaa" x="6" y="58">Prof. 0</text>
+        <text font-family="Georgia,serif" font-size="9.5" fill="#aaa" x="6" y="136">Prof. 1</text>
+        <text font-family="Georgia,serif" font-size="9.5" fill="#aaa" x="6" y="216">Prof. 2</text>
+        <text font-family="Georgia,serif" font-size="9.5" fill="#aaa" x="6" y="294">Prof. 3</text>
+      </svg>
+      <div class="legend">
+        <div class="li"><div class="ld" style="background:#e63946;border-color:#9b1f2a"></div>Hijo único → eliminado con subtárbol</div>
+        <div class="li"><div class="ld" style="background:#fff;border-color:#1c1c2e"></div>Nodo normal</div>
+      </div>
+    </div>
+
+    <div class="arr">→</div>
+
+    <!-- ÁRBOL RESULTANTE -->
+    <div class="tree-card">
+      <div class="card-lbl">Árbol resultante (k = 2)</div>
+      <svg viewBox="0 0 380 238" xmlns="http://www.w3.org/2000/svg" width="380" height="238">
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="190" y1="54"  x2="88"  y2="134"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="190" y1="54"  x2="292" y2="134"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="88"  y1="134" x2="38"  y2="214"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="88"  y1="134" x2="148" y2="214"/>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="190" cy="54"  r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="190" y="54">20</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="88"  cy="134" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="88" y="134">8</text>
+        <!-- 30 ya sin hijo -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="292" cy="134" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="292" y="134">30</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="38"  cy="214" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="38" y="214">3</text>
+        <!-- 12 ya sin hijo -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="148" cy="214" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="148" y="214">12</text>
+      </svg>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;font-style:italic">
+        35 y 15 eliminados junto con sus subárboles
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note" style="border-color:#c1121f;background:#fff5f5;">
+    <strong>Recorrido DFS preorden:</strong> 20 → 8 → 3 → 12 → <strong style="color:#c1121f">15</strong> → 30 → <strong style="color:#c1121f">35</strong>. El nodo <strong>15</strong> es el único hijo de 12 y se encuentra primero en profundidad (eliminado — ①). El nodo <strong>35</strong> es el único hijo de 30 y se encuentra después al retroceder hacia la rama derecha (eliminado — ②). Los nodos 3, 12, 8 no son hijos únicos porque sus padres tienen dos hijos. Con k = 2 se eliminan 15 y 35 junto con sus respectivos subárboles.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PROBLEMA 2 — Árbol General · Duplicación de Hijos
+══════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="ph">
+    <div class="badge" style="background:#1b7a6e">2</div>
+    <div class="ph-text">
+      <div class="ph-kicker">Árbol General · Inserción</div>
+      <div class="ph-title">Duplicación de Hijos</div>
+    </div>
+    <div class="ph-pts">10 puntos</div>
+  </div>
+
+  <div class="stmt">
+    Dado un árbol general y un entero <strong>k</strong>, identifique todos los nodos que tengan <strong>exactamente k hijos</strong> y agréguele a cada uno <strong>k nuevos hijos</strong> cuyo valor sea igual al valor del nodo padre. El recorrido debe hacerse en <strong>preorden</strong>. Implemente la función:
+    <br>
+    <span class="sig">void duplicarHijos(NodoGeneral* raiz, int k)</span>
+  </div>
+
+  <div class="ct-title">Restricciones</div>
+  <div class="chips">
+    <div class="chip">1 ≤ k ≤ n</div>
+    <div class="chip">n ≥ 1</div>
+    <div class="chip">Los nuevos hijos se agregan al final de la lista de hijos existentes</div>
+    <div class="chip">Los nodos recién insertados NO se procesan en el mismo recorrido</div>
+    <div class="chip">Valor del nuevo hijo = valor del padre que lo genera</div>
+  </div>
+
+  <div class="ex-title">Ejemplo de ejecución — k = 2</div>
+  <div class="ex-row">
+
+    <!-- ÁRBOL ORIGINAL -->
+    <div class="tree-card">
+      <div class="card-lbl">Árbol original</div>
+      <svg viewBox="0 0 480 272" xmlns="http://www.w3.org/2000/svg" width="480" height="272">
+        <!-- Aristas desde 10 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="240" y1="50"  x2="90"  y2="135"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="240" y1="50"  x2="240" y2="135"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="240" y1="50"  x2="390" y2="135"/>
+        <!-- Aristas desde 5 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="90"  y1="135" x2="45"  y2="222"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="90"  y1="135" x2="135" y2="222"/>
+        <!-- Arista desde 8 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="240" y1="135" x2="240" y2="222"/>
+        <!-- Aristas desde 15 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="390" y1="135" x2="345" y2="222"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="390" y1="135" x2="435" y2="222"/>
+        <!-- Nodo 10 (3 hijos → no califica) -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="240" cy="50"  r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="240" y="50">10</text>
+        <text font-family="Georgia,serif" font-size="10" fill="#999" text-anchor="middle" x="240" y="79">3 hijos</text>
+        <!-- Nodo 5 (2 hijos → califica) -->
+        <circle fill="#f4a261" stroke="#b5652a" stroke-width="2.2" cx="90"  cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="90" y="135">5</text>
+        <text font-family="Georgia,serif" font-size="10" fill="#b5652a" font-weight="600" text-anchor="middle" x="90" y="164">2 hijos ✓</text>
+        <!-- Nodo 8 (1 hijo → no califica) -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="240" cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="240" y="135">8</text>
+        <text font-family="Georgia,serif" font-size="10" fill="#999" text-anchor="middle" x="240" y="164">1 hijo</text>
+        <!-- Nodo 15 (2 hijos → califica) -->
+        <circle fill="#f4a261" stroke="#b5652a" stroke-width="2.2" cx="390" cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="390" y="135">15</text>
+        <text font-family="Georgia,serif" font-size="10" fill="#b5652a" font-weight="600" text-anchor="middle" x="390" y="164">2 hijos ✓</text>
+        <!-- Hojas -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="45"  cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="45" y="222">3</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="135" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="135" y="222">7</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="240" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="240" y="222">9</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="345" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="345" y="222">12</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="435" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="435" y="222">20</text>
+      </svg>
+      <div class="legend">
+        <div class="li"><div class="ld" style="background:#f4a261;border-color:#b5652a"></div>Tiene exactamente k=2 hijos → califica</div>
+        <div class="li"><div class="ld" style="background:#fff;border-color:#1c1c2e"></div>No califica</div>
+      </div>
+    </div>
+
+    <div class="arr">→</div>
+
+    <!-- ÁRBOL RESULTANTE -->
+    <div class="tree-card">
+      <div class="card-lbl">Árbol resultante</div>
+      <svg viewBox="0 0 634 272" xmlns="http://www.w3.org/2000/svg" width="634" height="272">
+        <!-- Aristas desde 10 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="317" y1="50"  x2="117" y2="135"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="317" y1="50"  x2="317" y2="135"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="317" y1="50"  x2="500" y2="135"/>
+        <!-- Aristas desde 5 (originales) -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="117" y1="135" x2="32"  y2="222"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="117" y1="135" x2="82"  y2="222"/>
+        <!-- Aristas desde 5 (nuevas — discontinuas) -->
+        <line stroke="#1b7a6e" stroke-width="1.8" stroke-dasharray="5,3" x1="117" y1="135" x2="148" y2="222"/>
+        <line stroke="#1b7a6e" stroke-width="1.8" stroke-dasharray="5,3" x1="117" y1="135" x2="200" y2="222"/>
+        <!-- Arista desde 8 -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="317" y1="135" x2="317" y2="222"/>
+        <!-- Aristas desde 15 (originales) -->
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="500" y1="135" x2="418" y2="222"/>
+        <line stroke="#1c1c2e" stroke-width="1.8" x1="500" y1="135" x2="462" y2="222"/>
+        <!-- Aristas desde 15 (nuevas — discontinuas) -->
+        <line stroke="#1b7a6e" stroke-width="1.8" stroke-dasharray="5,3" x1="500" y1="135" x2="538" y2="222"/>
+        <line stroke="#1b7a6e" stroke-width="1.8" stroke-dasharray="5,3" x1="500" y1="135" x2="590" y2="222"/>
+        <!-- Nodos -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="317" cy="50"  r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="317" y="50">10</text>
+        <circle fill="#f4a261" stroke="#b5652a" stroke-width="2.2" cx="117" cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="117" y="135">5</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="317" cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="317" y="135">8</text>
+        <circle fill="#f4a261" stroke="#b5652a" stroke-width="2.2" cx="500" cy="135" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="500" y="135">15</text>
+        <!-- Hijos originales de 5 -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="32"  cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="32" y="222">3</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="82"  cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="82" y="222">7</text>
+        <!-- Nuevos hijos de 5 -->
+        <circle fill="#52b788" stroke="#2a7a5a" stroke-width="2.2" cx="148" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="148" y="222">5</text>
+        <circle fill="#52b788" stroke="#2a7a5a" stroke-width="2.2" cx="200" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="200" y="222">5</text>
+        <!-- Hijo de 8 -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="317" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="317" y="222">9</text>
+        <!-- Hijos originales de 15 -->
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="418" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="418" y="222">12</text>
+        <circle fill="#fff" stroke="#1c1c2e" stroke-width="2.2" cx="462" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#1c1c2e" text-anchor="middle" dominant-baseline="central" x="462" y="222">20</text>
+        <!-- Nuevos hijos de 15 -->
+        <circle fill="#52b788" stroke="#2a7a5a" stroke-width="2.2" cx="538" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="538" y="222">15</text>
+        <circle fill="#52b788" stroke="#2a7a5a" stroke-width="2.2" cx="590" cy="222" r="24"/>
+        <text font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="590" y="222">15</text>
+      </svg>
+      <div class="legend">
+        <div class="li"><div class="ld" style="background:#52b788;border-color:#2a7a5a"></div>Nuevo hijo insertado (valor = padre)</div>
+        <div class="li" style="gap:7px"><svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#1b7a6e" stroke-width="1.8" stroke-dasharray="4,2"/></svg>Enlace nuevo</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note" style="border-color:#1b7a6e;background:#f0faf8;">
+    <strong>Nodos calificados (k = 2):</strong> <strong>5</strong> (hijos: 3, 7) y <strong>15</strong> (hijos: 12, 20). El nodo <strong>10</strong> tiene 3 hijos y el <strong>8</strong> tiene 1, por lo que no califican. En preorden, 5 se procesa antes que 15. A cada calificado se le agregan al final 2 nuevos hijos con su propio valor. Los nodos recién creados no se visitan durante el mismo recorrido.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PROBLEMA 3 — BST · Menores en Orden Descendente
+══════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="ph">
+    <div class="badge" style="background:#1d5f84">3</div>
+    <div class="ph-text">
+      <div class="ph-kicker">BST · Búsqueda y Recorrido</div>
+      <div class="ph-title">Menores en Orden Descendente</div>
+    </div>
+    <div class="ph-pts">10 puntos</div>
+  </div>
+
+  <div class="stmt">
+    Dado un árbol binario de búsqueda (BST) y un entero <strong>k</strong>, retorne una lista con todos los nodos cuyo valor sea <strong>estrictamente menor que k</strong>, ordenados de <strong>mayor a menor</strong>. Si el valor <strong>k no existe en el BST</strong>, retorne la lista <code style="font-family:'JetBrains Mono','Courier New',monospace;font-size:14px;background:#f2f2ee;padding:1px 6px;border-radius:2px">[−1]</code>. Implemente la función:
+    <br>
+    <span class="sig">Lista* menoresDescendente(NodoBST* raiz, int k)</span>
+  </div>
+
+  <div class="ct-title">Restricciones</div>
+  <div class="chips">
+    <div class="chip">El árbol cumple estrictamente la propiedad BST</div>
+    <div class="chip">Sin valores repetidos</div>
+    <div class="chip">k no existe en el BST → retornar [−1]</div>
+    <div class="chip">k existe pero no hay menores → retornar []</div>
+    <div class="chip">Lista ordenada de mayor a menor</div>
+    <div class="chip">Lograr la solución en un solo recorrido</div>
+  </div>
+
+  <div class="ex-title">Ejemplo de ejecución — k = 10 (existe en el BST)</div>
+
+  <div class="tree-card full">
+    <div class="card-lbl">BST — nodos menores a k = 10 resaltados en azul</div>
+    <svg viewBox="0 0 520 326" xmlns="http://www.w3.org/2000/svg" width="520" height="326">
+      <!-- Aristas -->
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="260" y1="52"  x2="140" y2="132"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="260" y1="52"  x2="380" y2="132"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="140" y1="132" x2="74"  y2="218"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="140" y1="132" x2="206" y2="218"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="380" y1="132" x2="318" y2="218"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="380" y1="132" x2="446" y2="218"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="74"  y1="218" x2="38"  y2="298"/>
+      <line stroke="#1c1c2e" stroke-width="1.8" x1="206" y1="218" x2="242" y2="298"/>
+      <!-- k = 10 (naranja) -->
+      <circle fill="#f4a261" stroke="#b5652a" stroke-width="2.5" cx="260" cy="52"  r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="260" y="52">10</text>
+      <!-- Menores que k (azul) -->
+      <circle fill="#4e9cbf" stroke="#1d5f84" stroke-width="2.2" cx="140" cy="132" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="140" y="132">5</text>
+      <circle fill="#4e9cbf" stroke="#1d5f84" stroke-width="2.2" cx="74"  cy="218" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="74" y="218">3</text>
+      <circle fill="#4e9cbf" stroke="#1d5f84" stroke-width="2.2" cx="206" cy="218" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="206" y="218">7</text>
+      <circle fill="#4e9cbf" stroke="#1d5f84" stroke-width="2.2" cx="38"  cy="298" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="38" y="298">1</text>
+      <circle fill="#4e9cbf" stroke="#1d5f84" stroke-width="2.2" cx="242" cy="298" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central" x="242" y="298">8</text>
+      <!-- Mayores que k (gris) -->
+      <circle fill="#dde2e6" stroke="#8d9399" stroke-width="2.2" cx="380" cy="132" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#555" text-anchor="middle" dominant-baseline="central" x="380" y="132">15</text>
+      <circle fill="#dde2e6" stroke="#8d9399" stroke-width="2.2" cx="318" cy="218" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#555" text-anchor="middle" dominant-baseline="central" x="318" y="218">12</text>
+      <circle fill="#dde2e6" stroke="#8d9399" stroke-width="2.2" cx="446" cy="218" r="26"/>
+      <text font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#555" text-anchor="middle" dominant-baseline="central" x="446" y="218">20</text>
+      <!-- Etiquetas de valor -->
+      <text font-family="Georgia,serif" font-size="10" fill="#b5652a" font-weight="600" text-anchor="middle" x="260" y="84">k = 10</text>
+    </svg>
+    <div class="legend" style="justify-content:center">
+      <div class="li"><div class="ld" style="background:#f4a261;border-color:#b5652a"></div>k = 10 — valor buscado</div>
+      <div class="li"><div class="ld" style="background:#4e9cbf;border-color:#1d5f84"></div>Menor que k → incluido en resultado</div>
+      <div class="li"><div class="ld" style="background:#dde2e6;border-color:#8d9399"></div>Mayor que k → ignorado</div>
+    </div>
+  </div>
+
+  <div class="res">
+    <div class="res-lbl">Resultado — menores a 10, de mayor a menor</div>
+    <code>[ 8, 7, 5, 3, 1 ]</code>
+  </div>
+
+  <div class="res" style="border-left:3px solid #c1121f;margin-top:8px">
+    <div class="res-lbl">Caso — k = 6 (no existe en el BST)</div>
+    <code>[ −1 ]</code>
+  </div>
+
+</div>
+
+</body>
+</html>
