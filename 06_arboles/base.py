@@ -1,11 +1,13 @@
 """Implementaciones base de árboles.
 
-- BinaryNode / BinaryTree: árbol binario genérico (no es un BST balanceado,
+- BinaryNode / BinaryTree: árbol binario genérico (no mantiene ningún orden,
   solo la estructura de nodos + utilidades para construir árboles de prueba).
+- BinarySearchTree: árbol binario de búsqueda (mantiene el invariante
+  izquierda < nodo < derecha), reutiliza BinaryNode.
 - GeneralNode / GeneralTree: árbol general (cada nodo puede tener N hijos).
 
 Uso:
-    from base import BinaryNode, BinaryTree, GeneralNode, GeneralTree
+    from base import BinaryNode, BinaryTree, BinarySearchTree, GeneralNode, GeneralTree
 """
 from collections import deque
 from typing import Any, Optional, List
@@ -113,6 +115,48 @@ class BinaryTree:
             self.print(node.left, prefix + ("    " if is_left else "│   "), True, False)
 
 
+class BinarySearchTree:
+    """Árbol binario de búsqueda: para cada nodo, izquierda < nodo < derecha.
+
+    Reutiliza BinaryNode. Los valores duplicados se ignoran (no se reinsertan).
+    """
+
+    def __init__(self):
+        self.root: Optional[BinaryNode] = None
+
+    def insert(self, value: Any) -> None:
+        if self.root is None:
+            self.root = BinaryNode(value)
+            return
+        self._insert(self.root, value)
+
+    def _insert(self, current: BinaryNode, value: Any) -> None:
+        if value == current.value:
+            return
+        if value < current.value:
+            if current.left is None:
+                current.left = BinaryNode(value)
+            else:
+                self._insert(current.left, value)
+        else:
+            if current.right is None:
+                current.right = BinaryNode(value)
+            else:
+                self._insert(current.right, value)
+
+    def print(self, node=None, prefix="", is_left=True, flag=True):
+        if flag:
+            node = self.root
+        if not node:
+            print("Empty Tree")
+            return
+        if node.right:
+            self.print(node.right, prefix + ("│   " if is_left else "    "), False, False)
+        print(prefix + ("└── " if is_left else "┌── ") + str(node.value))
+        if node.left:
+            self.print(node.left, prefix + ("    " if is_left else "│   "), True, False)
+
+
 class GeneralNode:
     def __init__(self, value: Any):
         self.value = value
@@ -177,6 +221,11 @@ if __name__ == "__main__":
     tree.insert_by_level([1, 2, 3, None, 5, 6, None, 7])
     tree.insert(7, 10)
     tree.print()
+
+    bst = BinarySearchTree()
+    for value in [50, 30, 70, 20, 40, 60, 80]:
+        bst.insert(value)
+    bst.print()
 
     gtree = GeneralTree()
     gtree.insert(None, "A")
