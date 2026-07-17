@@ -8,7 +8,7 @@ Las carpetas numeradas (`01_...` a `07_...`) son el curso en sí, en orden. Dent
 
 | Carpeta | Qué contiene |
 | --- | --- |
-| `00_curso/` | Plan del semestre, rúbricas de evaluación y la presentación de bienvenida. Empieza por aquí si quieres entender cómo se evalúa el curso. |
+| `00_curso/` | Introducción al curso, plan del semestre, rúbricas de evaluación, reto diagnóstico y la presentación de bienvenida. Empieza por aquí. |
 | `01` a `07` | El contenido de clase, un tema por carpeta, en el orden en que se dictan. |
 | `material_de_apoyo/` | Parciales y prácticas **de semestres anteriores**, como referencia para estudiar. No es contenido nuevo — son evaluaciones reales ya aplicadas. |
 
@@ -81,3 +81,7 @@ material_de_apoyo/
 ## 📊 Evaluación
 
 El detalle completo de fechas, temas por clase y ponderaciones está en `00_curso/plan_semestre.md`. Las rúbricas de calificación (parciales, seguimiento en clase, y exención del examen final) están en `00_curso/rubrica_*.md`.
+
+## 👋 Antes de la semana 1
+
+`00_curso/introduccion_curso.md` reúne todo lo de la presentación de bienvenida (objetivos, metodología, acuerdos del curso, comunicación, recursos recomendados) en texto plano, y `00_curso/reto_diagnostico.ipynb` es el ejercicio de autoevaluación de fundamentos con el que arranca el curso.
