@@ -4,12 +4,12 @@ Este repositorio es la base de tu proceso formativo en el curso: introducciones 
 
 ## 🧭 Cómo navegar el repositorio
 
-Las carpetas numeradas (`01_...` a `07_...`) son el curso en sí, en orden. Dentro de cada una hay teoría, implementaciones base y ejercicios de ese tema. Fuera de esa numeración hay dos carpetas de apoyo:
+Las carpetas numeradas (`01_...` a `08_...`) son el curso en sí, en orden. Dentro de cada una hay teoría, implementaciones base y ejercicios de ese tema. Fuera de esa numeración hay dos carpetas de apoyo:
 
 | Carpeta | Qué contiene |
 | --- | --- |
 | `00_curso/` | Introducción al curso, plan del semestre, rúbricas de evaluación, reto diagnóstico y la presentación de bienvenida. Empieza por aquí. |
-| `01` a `07` | El contenido de clase, un tema por carpeta, en el orden en que se dictan. |
+| `01` a `08` | El contenido de clase, un tema por carpeta, en el orden en que se dictan. |
 | `material_de_apoyo/` | Parciales y prácticas **de semestres anteriores**, como referencia para estudiar. No es contenido nuevo — son evaluaciones reales ya aplicadas. |
 
 ### Orden de los temas
@@ -17,12 +17,13 @@ Las carpetas numeradas (`01_...` a `07_...`) son el curso en sí, en orden. Dent
 | Carpeta | Tema |
 | --- | --- |
 | `01_fundamentos_programacion/` | Variables, condicionales, ciclos, funciones (repaso antes de arrancar) |
-| `02_tipos_de_datos_abstractos/` | Qué es un ADT y por qué importa la abstracción |
-| `03_listas_enlazadas/` | Listas simples, dobles y circulares |
-| `04_pilas_y_colas/` | Pilas, colas y colas de prioridad |
-| `05_recursion/` | Recursión, call stack, recursión de cola |
-| `06_arboles/` | Árboles binarios, generales y árboles de búsqueda (BST) |
-| `07_grafos/` | Representación de grafos, recorridos (BFS/DFS), ordenamiento topológico |
+| `02_analisis_asintotico/` | Complejidad temporal y espacial, notación Big O, cómo analizar código paso a paso |
+| `03_tipos_de_datos_abstractos/` | Qué es un ADT y por qué importa la abstracción |
+| `04_listas_enlazadas/` | Listas simples, dobles y circulares |
+| `05_pilas_y_colas/` | Pilas, colas y colas de prioridad |
+| `06_recursion/` | Recursión, call stack, recursión de cola |
+| `07_arboles/` | Árboles binarios, generales y árboles de búsqueda (BST) |
+| `08_grafos/` | Representación de grafos, recorridos (BFS/DFS), ordenamiento topológico |
 
 Este orden coincide con el de `00_curso/plan_semestre.md`, así que si vas siguiendo el plan del semestre, vas siguiendo estas carpetas en el mismo orden.
 
@@ -42,7 +43,7 @@ Dentro de cada carpeta de tema vas a encontrar siempre el mismo tipo de archivos
 
 ## 🧩 Cómo usar `base.py`
 
-Varios temas (`03`, `04`, `06`, `07`) traen un archivo `base.py` con las clases que vas a necesitar para resolver los ejercicios de esa carpeta (por ejemplo, `Stack`, `Queue`, `GraphL`, `BinaryTree`). La idea es que **no tengas que copiar y pegar la misma clase en cada notebook** — la implementas una vez (o la revisas en el notebook de teoría, donde se construye desde cero) y luego la importas donde la necesites:
+Varios temas (`04`, `05`, `07`, `08`) traen un archivo `base.py` con las clases que vas a necesitar para resolver los ejercicios de esa carpeta (por ejemplo, `Stack`, `Queue`, `GraphL`, `BinaryTree`). La idea es que **no tengas que copiar y pegar la misma clase en cada notebook** — la implementas una vez (o la revisas en el notebook de teoría, donde se construye desde cero) y luego la importas donde la necesites:
 
 ```python
 from base import Stack, Queue
@@ -52,12 +53,12 @@ Para que el `import` funcione, el notebook y el `base.py` deben estar **en la mi
 
 | Carpeta | Qué trae `base.py` |
 | --- | --- |
-| `03_listas_enlazadas/` | `NodeSingly`/`SinglyLinkedList`, `NodeDoubly`/`DoublyLinkedList`, `NodeCircular`/`CircularLinkedList` |
-| `04_pilas_y_colas/` | `Stack`, `Queue`, `PriorityQueue` |
-| `06_arboles/` | `BinaryNode`/`BinaryTree`, `BinarySearchTree`, `GeneralNode`/`GeneralTree` |
-| `07_grafos/` | `GraphL`/`GraphM` (sin peso) y `GraphWL`/`GraphWM` (con peso) — lista y matriz de adyacencia, cada una soporta grafos dirigidos y no dirigidos con el parámetro `directed` |
+| `04_listas_enlazadas/` | `NodeSingly`/`SinglyLinkedList`, `NodeDoubly`/`DoublyLinkedList`, `NodeCircular`/`CircularLinkedList` |
+| `05_pilas_y_colas/` | `Stack`, `Queue`, `PriorityQueue` |
+| `07_arboles/` | `BinaryNode`/`BinaryTree`, `BinarySearchTree`, `GeneralNode`/`GeneralTree` |
+| `08_grafos/` | `GraphL`/`GraphM` (sin peso) y `GraphWL`/`GraphWM` (con peso) — lista y matriz de adyacencia, cada una soporta grafos dirigidos y no dirigidos con el parámetro `directed` |
 
-`05_recursion` no tiene `base.py`: la recursión trabaja sobre funciones, no sobre estructuras con estado, así que no hay una clase que reutilizar entre ejercicios.
+`02_analisis_asintotico` y `06_recursion` no tienen `base.py`: el primero trabaja sobre fragmentos de código sueltos para analizar su complejidad, y la recursión trabaja sobre funciones, no sobre estructuras con estado — en ninguno de los dos hay una clase con estado que reutilizar entre ejercicios.
 
 ## ▶️ Cómo empezar
 
