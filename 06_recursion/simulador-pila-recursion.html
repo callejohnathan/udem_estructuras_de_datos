@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La pila de llamadas — simulador y ejercicios de recursión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0F1B2C;
+    --bg-panel: #14263D;
+    --bg-panel-2: #112036;
+    --grid-line: #1C3350;
+    --paper: #E9F1F9;
+    --muted: #7E96AF;
+    --muted-2: #567089;
+    --accent-push: #F0A75B;
+    --accent-wait: #E0A23F;
+    --accent-return: #5FD4C4;
+    --accent-base: #E97B93;
+    --accent-bad: #E9636B;
+    --line: #2A4A6D;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+    --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/100% 28px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/28px 100%,
+      var(--bg);
+    color: var(--paper);
+    font-family: var(--sans);
+    min-height:100vh;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:28px 22px 60px;}
+
+  header.top{
+    display:flex; flex-wrap:wrap; gap:18px 28px; align-items:flex-end; justify-content:space-between;
+    padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:16px;
+  }
+  header.top .titles{max-width:640px;}
+  header.top h1{
+    font-family:var(--sans); font-weight:700; font-size:1.55rem; margin:0 0 8px;
+    letter-spacing:.2px; color:var(--paper);
+  }
+  header.top h1 .accent{color:var(--accent-push);}
+  header.top p{margin:0; color:var(--muted); font-size:.92rem; line-height:1.5;}
+
+  .config{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;}
+  .config label{font-size:.78rem; color:var(--muted); display:block; margin-bottom:4px;}
+  .field{display:flex; flex-direction:column;}
+  select, input[type="text"], input[type="number"]{
+    background:var(--bg-panel); border:1px solid var(--line); color:var(--paper);
+    font-family:var(--mono); font-size:.86rem; padding:7px 10px; border-radius:2px;
+    min-width:120px;
+  }
+  select:focus, input:focus{outline:1px solid var(--accent-push);}
+  button{
+    font-family:var(--sans); font-weight:600; font-size:.84rem; cursor:pointer;
+    border-radius:2px; border:1px solid var(--line); background:var(--bg-panel); color:var(--paper);
+    padding:8px 14px; transition: border-color .15s, color .15s;
+  }
+  button:hover{border-color:var(--accent-push); color:var(--accent-push);}
+  button.primary{background:var(--accent-push); color:#241405; border-color:var(--accent-push); font-weight:700;}
+  button.primary:hover{color:#241405; opacity:.9;}
+  button:disabled{opacity:.35; cursor:default;}
+  button:disabled:hover{border-color:var(--line); color:var(--paper);}
+
+  .check-field{display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--muted); cursor:pointer;}
+  .check-field input{accent-color:var(--accent-push);}
+
+  /* Tabs */
+  .tabs{display:flex; gap:4px; margin-bottom:18px;}
+  .tab-btn{
+    background:none; border:1px solid var(--line); border-bottom:none; border-radius:3px 3px 0 0;
+    color:var(--muted); padding:9px 18px; font-size:.85rem; font-weight:600;
+  }
+  .tab-btn.active{color:var(--paper); background:var(--bg-panel-2); border-color:var(--line);}
+  .tab-btn:hover{color:var(--accent-push); border-color:var(--line);}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:16px; margin-bottom:18px; font-size:.8rem; color:var(--muted);
+  }
+  .legend span.dot{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:-1px;}
+
+  main{display:flex; flex-wrap:wrap; gap:20px; align-items:stretch;}
+
+  .panel{
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:3px;
+    padding:16px 16px 18px; position:relative;
+  }
+  .panel h2{
+    font-family:var(--sans); font-size:.78rem; font-weight:600;
+    color:var(--muted); margin:0 0 12px; letter-spacing:.2px;
+    border-bottom:1px dashed var(--line); padding-bottom:8px;
+  }
+
+  .code-panel{flex:1 1 340px; min-width:300px;}
+  .code-panel pre{margin:0; font-family:var(--mono); font-size:.87rem; line-height:1.85;}
+  .code-line{
+    display:block; padding:1px 8px 1px 10px; border-left:3px solid transparent; color:var(--muted);
+    white-space:pre;
+  }
+  .code-line.active{
+    border-left-color:var(--accent-push); background:rgba(240,167,91,.09); color:var(--paper);
+  }
+
+  .stack-panel{flex:1 1 300px; min-width:280px; display:flex; flex-direction:column;}
+  .stack-container{
+    flex:1; display:flex; flex-direction:column-reverse; gap:8px; min-height:260px;
+    justify-content:flex-start; padding-top:6px;
+  }
+  .stack-floor{
+    border-top:2px solid var(--muted-2); margin-top:2px; padding-top:6px;
+    font-family:var(--mono); font-size:.7rem; color:var(--muted-2); text-align:center;
+  }
+
+  .frame{
+    position:relative; border:1px solid var(--accent-push); border-radius:2px;
+    padding:9px 12px 9px 14px; font-family:var(--mono); font-size:.84rem;
+    background:rgba(240,167,91,.06); animation: dropIn .25s ease-out;
+  }
+  .frame::before, .frame::after{
+    content:''; position:absolute; width:9px; height:9px; border-color:inherit; top:-1px;
+  }
+  .frame::before{left:-1px; border-top:2px solid; border-left:2px solid;}
+  .frame::after{right:-1px; border-top:2px solid; border-right:2px solid;}
+  .frame .fn-line{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .frame .fn-name{color:var(--paper); font-weight:500;}
+  .frame .status-tag{
+    font-family:var(--sans); font-size:.66rem; padding:2px 7px; border-radius:10px; font-weight:600;
+    white-space:nowrap;
+  }
+  .frame.status-esperando{border-color:var(--accent-wait); border-style:dashed; background:rgba(224,162,63,.06);}
+  .frame.status-esperando .status-tag{background:rgba(224,162,63,.18); color:var(--accent-wait);}
+  .frame.status-activo .status-tag{background:rgba(240,167,91,.18); color:var(--accent-push);}
+  .frame.status-listo{border-color:var(--accent-return); background:rgba(95,212,196,.07);}
+  .frame.status-listo .status-tag{background:rgba(95,212,196,.18); color:var(--accent-return);}
+  .frame.status-base{border-color:var(--accent-base); background:rgba(233,123,147,.08);}
+  .frame.status-base .status-tag{background:rgba(233,123,147,.2); color:var(--accent-base);}
+  .frame.highlight{box-shadow:0 0 0 2px rgba(255,255,255,.18);}
+  .frame .result-line{margin-top:5px; color:var(--muted); font-size:.78rem;}
+  .frame .result-line b{color:var(--accent-return); font-weight:600;}
+
+  @keyframes dropIn{ from{ transform:translateY(-10px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+
+  .empty-stack{color:var(--muted); font-family:var(--mono); font-size:.8rem; text-align:center; padding:30px 0;}
+  .overflow-msg{color:var(--accent-bad); font-family:var(--mono); font-size:.8rem; text-align:center; padding:24px 10px; border:1px dashed var(--accent-bad); border-radius:2px;}
+
+  .flow-banner{
+    min-height:34px; margin-bottom:10px; font-family:var(--mono); font-size:.78rem;
+    color:var(--accent-return); display:flex; align-items:center; gap:8px; opacity:0;
+  }
+  .flow-banner.show{ animation: flowPulse 1.1s ease-out; }
+  @keyframes flowPulse{
+    0%{opacity:0; transform:translateY(6px);}
+    15%{opacity:1; transform:translateY(0);}
+    75%{opacity:1;}
+    100%{opacity:0;}
+  }
+
+  .tree-panel{flex:1 1 100%;}
+  .tree-panel svg{width:100%; height:260px; display:block;}
+  .tree-panel .node-box{fill:var(--bg-panel); stroke:var(--muted-2); stroke-width:1.2;}
+  .tree-panel .node-box.activo{stroke:var(--accent-push); stroke-dasharray:3,2;}
+  .tree-panel .node-box.esperando{stroke:var(--accent-wait); stroke-dasharray:3,2;}
+  .tree-panel .node-box.listo{stroke:var(--accent-return);}
+  .tree-panel .node-box.base{stroke:var(--accent-base);}
+  .tree-panel .node-label{font-family:var(--mono); font-size:11px; fill:var(--paper); text-anchor:middle;}
+  .tree-panel .node-result{font-family:var(--mono); font-size:10px; fill:var(--accent-return); text-anchor:middle;}
+  .tree-panel line.edge{stroke:var(--line); stroke-width:1.3; stroke-dasharray:2,2;}
+  .tree-panel line.edge.done{stroke:var(--muted-2); stroke-dasharray:none;}
+
+  footer.controls{
+    margin-top:22px; border:1px solid var(--line); border-radius:3px; background:var(--bg-panel-2);
+    padding:14px 18px 16px; position:relative;
+  }
+  .caption{
+    min-height:44px; font-size:.92rem; line-height:1.5; color:var(--paper); margin-bottom:12px;
+    padding-left:12px; border-left:3px solid var(--accent-push);
+  }
+  .caption.is-final{border-left-color:var(--accent-return); color:var(--accent-return); font-weight:600;}
+  .transport{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .transport .step-counter{
+    font-family:var(--mono); font-size:.78rem; color:var(--muted); margin-left:auto; min-width:110px; text-align:right;
+  }
+  input[type="range"]{accent-color:var(--accent-push); flex:1 1 160px; min-width:120px;}
+  .speed-field{display:flex; align-items:center; gap:6px; font-size:.76rem; color:var(--muted);}
+
+  /* Predicción */
+  .predict-overlay{
+    margin-bottom:12px; padding:14px; border:1px solid var(--accent-push); border-radius:3px;
+    background:rgba(240,167,91,.07);
+  }
+  .predict-overlay .predict-prompt{font-size:.9rem; margin-bottom:10px; line-height:1.5;}
+  .predict-row{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .predict-feedback{margin-top:10px; font-size:.87rem; font-family:var(--mono);}
+  .predict-feedback.ok{color:var(--accent-return);}
+  .predict-feedback.bad{color:var(--accent-bad);}
+
+  /* Ejercicios */
+  .exercise-list{display:flex; flex-direction:column; gap:18px;}
+  .exercise-card{
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:3px; padding:18px 20px;
+  }
+  .exercise-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;}
+  .exercise-head h3{margin:0; font-size:1rem; font-weight:600; font-family:var(--sans);}
+  .tag{font-family:var(--sans); font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:10px;}
+  .tag.ok{background:rgba(95,212,196,.16); color:var(--accent-return);}
+  .tag.bug{background:rgba(233,99,107,.16); color:var(--accent-bad);}
+  .exercise-card pre{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:2px; padding:10px 14px;
+    font-family:var(--mono); font-size:.83rem; line-height:1.7; overflow-x:auto; margin:0 0 14px;
+  }
+  .exercise-fields{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:10px 14px; margin-bottom:12px;}
+  .exercise-fields .field label{font-size:.74rem;}
+  .exercise-fields input{width:100%;}
+  .exercise-actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .exercise-feedback{margin-top:12px; font-family:var(--mono); font-size:.82rem; display:flex; flex-direction:column; gap:4px;}
+  .exercise-feedback .ok{color:var(--accent-return);}
+  .exercise-feedback .bad{color:var(--accent-bad);}
+  .exercise-hint{font-size:.78rem; color:var(--muted); margin-top:-2px; margin-bottom:12px;}
+
+  [hidden]{display:none !important;}
+
+  /* ---- Práctica manual ---- */
+  .manual-config{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; margin-bottom:16px;}
+  .manual-layout{display:flex; flex-wrap:wrap; gap:20px;}
+  .manual-code{flex:1 1 260px; min-width:240px;}
+  .manual-code pre{margin:0; font-family:var(--mono); font-size:.85rem; line-height:1.8; color:var(--muted);}
+  .manual-stack-col{flex:1.3 1 340px; min-width:300px;}
+  .manual-actions{display:flex; gap:10px; margin-bottom:12px;}
+  .manual-actions button{flex:1;}
+  .manual-progress{font-family:var(--mono); font-size:.76rem; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
+  .manual-error{color:var(--accent-bad); font-size:.85rem; margin-bottom:10px; min-height:20px;}
+  .manual-form{border:1px solid var(--accent-push); border-radius:3px; background:rgba(240,167,91,.07); padding:12px 14px; margin-bottom:14px;}
+  .manual-form .prompt{font-size:.88rem; margin-bottom:10px; line-height:1.5;}
+  .manual-form .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .manual-feedback{margin-top:9px; font-family:var(--mono); font-size:.83rem;}
+  .manual-feedback.bad{color:var(--accent-bad);}
+  .manual-feedback.ok{color:var(--accent-return);}
+  .manual-hint{color:var(--muted); font-size:.78rem; margin-top:6px;}
+  .manual-flash{min-height:24px; font-family:var(--mono); font-size:.78rem; color:var(--accent-return); margin-bottom:8px;}
+  .manual-log{list-style:none; margin:14px 0 0; padding:0; font-family:var(--mono); font-size:.74rem; color:var(--muted); max-height:150px; overflow-y:auto;}
+  .manual-log li{padding:3px 0; border-bottom:1px dashed var(--line);}
+  .manual-completion{
+    margin-top:14px; padding:12px 14px; border:1px solid var(--accent-return); border-radius:3px;
+    background:rgba(95,212,196,.08); color:var(--accent-return); font-size:.88rem;
+  }
+
+  /* ---- Chuleta (tarjeta clara dentro de la app oscura) ---- */
+  .chuleta-wrap{display:flex; justify-content:center;}
+  .chuleta-sheet{
+    background:#FFFFFF; color:#16232F; max-width:880px; width:100%;
+    padding:30px 34px 26px; border-radius:3px; font-family:var(--sans);
+  }
+  .chuleta-sheet .ch-top{display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #16232F; padding-bottom:9px; margin-bottom:16px;}
+  .chuleta-sheet .ch-top h2{margin:0; font-size:1.2rem; font-weight:700; border:none; padding:0; color:#16232F;}
+  .chuleta-sheet .ch-top button{background:#16232F; color:#fff; border:none;}
+  .chuleta-sheet .ch-top button:hover{opacity:.85; color:#fff; border-color:#16232F;}
+  .chuleta-grid{display:grid; grid-template-columns:1.05fr 1fr; gap:22px 28px;}
+  .chuleta-sheet h3{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+    color:#B96A22; margin:0 0 8px; border-bottom:1px solid #D7DEE6; padding-bottom:5px;
+  }
+  .chuleta-sheet section{margin-bottom:14px;}
+  .chuleta-sheet p{margin:0 0 8px; font-size:.85rem; line-height:1.5; color:#16232F;}
+  .chuleta-sheet .glossary{list-style:none; margin:0; padding:0; font-size:.82rem;}
+  .chuleta-sheet .glossary li{margin-bottom:7px; line-height:1.4; color:#16232F;}
+  .chuleta-sheet .glossary b{font-family:var(--mono); font-weight:600;}
+  .chuleta-sheet pre{
+    background:#F3F6F9; border:1px solid #D7DEE6; border-radius:2px; padding:10px 12px;
+    font-family:var(--mono); font-size:.77rem; line-height:1.55; margin:0 0 10px; overflow-x:auto; color:#16232F;
+  }
+  .chuleta-sheet .questions{margin:0; padding:0; list-style:none; font-size:.82rem;}
+  .chuleta-sheet .questions li{margin-bottom:8px; padding-left:20px; position:relative; line-height:1.45; color:#16232F;}
+  .chuleta-sheet .questions li::before{content:'?'; position:absolute; left:0; top:0; color:#B96A22; font-weight:700; font-family:var(--mono);}
+  .chuleta-sheet .errors{display:flex; flex-direction:column; gap:9px;}
+  .chuleta-sheet .error-item{border-left:3px solid #B4405C; padding:2px 0 2px 10px;}
+  .chuleta-sheet .error-item h4{margin:0 0 3px; font-size:.81rem; font-weight:600; color:#16232F;}
+  .chuleta-sheet .error-item p{margin:0; font-size:.78rem; color:#55677A;}
+  .chuleta-sheet .ch-diagram{grid-column:1/-1; border-top:1px dashed #D7DEE6; padding-top:12px;}
+  .chuleta-sheet .ch-diagram svg{width:100%; height:140px; display:block;}
+
+  @media print{
+    body{background:#fff;}
+    header.top, .tabs{display:none !important;}
+    .app{padding:0; max-width:none;}
+    .chuleta-sheet{padding:0;}
+  }
+
+  @media (max-width: 720px){
+    header.top{align-items:flex-start;}
+    .transport .step-counter{margin-left:0; text-align:left;}
+    .chuleta-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="titles">
+      <h1>La pila de <span class="accent">llamadas</span></h1>
+      <p>Cada vez que una función se llama a sí misma, el computador apila un nuevo marco de memoria. Ese marco guarda sus propias variables y espera su turno para calcular un resultado y devolverlo. Usa el simulador para ver la traza exacta, y la pestaña de ejercicios para practicar prediciéndola tú mismo.</p>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-sim" data-tab="sim">Simulador</button>
+    <button class="tab-btn" id="tab-btn-manual" data-tab="manual">Práctica manual</button>
+    <button class="tab-btn" id="tab-btn-ex" data-tab="ex">Ejercicios</button>
+    <button class="tab-btn" id="tab-btn-ch" data-tab="ch">Chuleta</button>
+  </div>
+
+  <!-- ============== TAB: SIMULADOR ============== -->
+  <div id="tab-sim">
+
+    <div class="config" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="fn-select">Función</label>
+        <select id="fn-select">
+          <option value="factorial">factorial(n)</option>
+          <option value="suma">sumaLista(lista, i)</option>
+          <option value="fibonacci">fib(n)</option>
+        </select>
+      </div>
+      <div class="field" id="param-field">
+        <label id="param-label" for="param-input">n</label>
+        <input type="text" id="param-input" value="4">
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <label>&nbsp;</label>
+        <button class="primary" id="btn-generate">Generar simulación</button>
+      </div>
+      <label class="check-field" style="align-self:center; margin-left:8px;">
+        <input type="checkbox" id="predict-toggle">
+        Modo predicción (predice el valor antes de verlo)
+      </label>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent-push)"></span>activo — se está ejecutando</span>
+      <span><span class="dot" style="background:var(--accent-wait)"></span>esperando — hizo una llamada recursiva y no puede seguir hasta que esta le responda</span>
+      <span><span class="dot" style="background:var(--accent-return)"></span>listo — ya calculó su resultado, está por desapilarse</span>
+      <span><span class="dot" style="background:var(--accent-base)"></span>caso base — terminó sin volver a llamarse</span>
+    </div>
+
+    <main>
+      <section class="panel code-panel">
+        <h2>Código</h2>
+        <pre id="code-lines"></pre>
+      </section>
+
+      <section class="panel stack-panel">
+        <h2>Pila de llamadas (call stack)</h2>
+        <div class="flow-banner" id="flow-banner"></div>
+        <div class="stack-container" id="stack-container"></div>
+        <div class="stack-floor">base de la pila</div>
+      </section>
+
+      <section class="panel tree-panel" id="tree-panel" hidden>
+        <h2>Árbol de llamadas — cada nodo es una llamada; el color muestra su estado</h2>
+        <svg id="tree-svg" viewBox="0 0 900 260" preserveAspectRatio="xMidYMid meet"></svg>
+      </section>
+    </main>
+
+    <footer class="controls">
+      <div class="predict-overlay" id="predict-overlay" hidden>
+        <div class="predict-prompt" id="predict-prompt"></div>
+        <div class="predict-row">
+          <input type="text" id="predict-input" placeholder="tu respuesta" style="min-width:160px;">
+          <button class="primary" id="predict-check">Comprobar</button>
+          <button id="predict-continue" hidden>Continuar →</button>
+        </div>
+        <div class="predict-feedback" id="predict-feedback"></div>
+      </div>
+
+      <div class="caption" id="caption">Presiona «Generar simulación» para comenzar.</div>
+      <div class="transport">
+        <button id="btn-first" title="Ir al inicio">⏮</button>
+        <button id="btn-prev" title="Paso anterior">◀</button>
+        <button id="btn-play" class="primary" title="Reproducir / pausar">▶ Reproducir</button>
+        <button id="btn-next" title="Paso siguiente">▶</button>
+        <button id="btn-last" title="Ir al final">⏭</button>
+        <input type="range" id="scrubber" min="0" max="0" value="0">
+        <div class="speed-field">
+          <label for="speed">Velocidad</label>
+          <input type="range" id="speed" min="1" max="5" value="3" style="flex:none; width:70px;">
+        </div>
+        <div class="step-counter" id="step-counter">Paso 0 / 0</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ============== TAB: PRÁCTICA MANUAL ============== -->
+  <div id="tab-manual" hidden>
+    <p style="color:var(--muted); font-size:.9rem; max-width:760px; margin-bottom:18px;">
+      Aquí tú eres la máquina: no hay ninguna traza que se revele sola. Para cada llamada tienes que decidir si toca <b>apilar</b> una nueva llamada o <b>retornar</b> un valor, y calcular tú mismo ese valor. La herramienta solo valida si tu decisión y tu número son correctos en ese momento exacto.
+    </p>
+
+    <div class="manual-config">
+      <div class="field">
+        <label for="manual-fn-select">Función</label>
+        <select id="manual-fn-select">
+          <option value="factorial">factorial(n)</option>
+          <option value="suma">sumaLista(lista, i)</option>
+          <option value="fibonacci">fib(n)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="manual-param-label" for="manual-param-input">n</label>
+        <input type="text" id="manual-param-input" value="4">
+      </div>
+      <button class="primary" id="btn-manual-start">Empezar práctica</button>
+    </div>
+
+    <div class="manual-layout">
+      <section class="panel manual-code">
+        <h2>Código de referencia</h2>
+        <pre id="manual-code-lines"></pre>
+      </section>
+
+      <section class="panel manual-stack-col">
+        <h2>Tu pila</h2>
+        <div class="manual-progress">
+          <span id="manual-progress-text">Paso 0 / 0</span>
+          <span id="manual-accuracy-text">Precisión: 0/0</span>
+        </div>
+        <div class="manual-actions">
+          <button class="primary" id="btn-manual-push">➕ Apilar llamada</button>
+          <button id="btn-manual-pop">➖ Retornar valor</button>
+        </div>
+        <div class="manual-error" id="manual-error"></div>
+
+        <div class="manual-form" id="manual-form" hidden>
+          <div class="prompt" id="manual-form-prompt"></div>
+          <div class="row">
+            <input type="text" id="manual-form-input" placeholder="tu respuesta" style="min-width:140px;">
+            <button class="primary" id="manual-form-confirm">Confirmar</button>
+            <button id="manual-form-cancel">Cancelar</button>
+            <button id="manual-form-reveal" hidden>Mostrar respuesta</button>
+          </div>
+          <div class="manual-feedback" id="manual-form-feedback"></div>
+        </div>
+
+        <div class="manual-flash" id="manual-flash"></div>
+        <div class="stack-container" id="manual-stack-container"></div>
+        <div class="stack-floor">base de la pila</div>
+
+        <div class="manual-completion" id="manual-completion" hidden></div>
+        <ul class="manual-log" id="manual-log"></ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- ============== TAB: EJERCICIOS ============== -->
+  <div id="tab-ex" hidden>
+    <p style="color:var(--muted); font-size:.9rem; max-width:760px; margin-bottom:20px;">
+      Antes de correr cada función en tu cabeza (o en el simulador), resuélvela en papel: calcula la profundidad máxima que alcanzará la pila, cuántas llamadas se van a realizar en total, y cuál será el resultado final. Algunas de estas funciones tienen errores — si crees que una nunca va a terminar, escribe <b>"no termina"</b> como resultado. Luego presiona «Comprobar» y, si quieres ver exactamente dónde te equivocaste, «Ver simulación paso a paso».
+    </p>
+    <div class="exercise-list" id="exercise-list"></div>
+  </div>
+
+  <!-- ============== TAB: CHULETA ============== -->
+  <div id="tab-ch" hidden>
+    <div class="chuleta-wrap">
+      <div class="chuleta-sheet">
+        <div class="ch-top">
+          <h2>Recursión: la pila de llamadas</h2>
+          <button id="btn-print-chuleta">🖨 Imprimir</button>
+        </div>
+
+        <div class="chuleta-grid">
+          <section>
+            <h3>Vocabulario</h3>
+            <ul class="glossary">
+              <li><b>Apilar (push)</b> — al llamar a una función, se crea un marco nuevo y se coloca encima de la pila.</li>
+              <li><b>Desapilar (pop)</b> — cuando una función retorna, su marco desaparece de la pila y el valor viaja hacia quien la llamó.</li>
+              <li><b>Marco de pila (stack frame)</b> — el espacio de memoria de una llamada específica: tiene su propia copia de parámetros y variables locales, aunque sea la "misma" función que la de otro marco.</li>
+              <li><b>Caso base</b> — la condición más simple, donde la función retorna un valor directo sin volver a llamarse.</li>
+              <li><b>Caso recursivo</b> — la parte donde la función se llama a sí misma con una entrada más pequeña, y combina ese resultado con su parte local.</li>
+              <li><b>Retorno</b> — el valor que un marco entrega antes de desapilarse; vuelve exactamente al punto donde ese marco hizo la llamada.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>El patrón general</h3>
+            <pre>función f(entrada):
+    si (caso base):
+        retornar valor_directo
+    si_no:
+        # 1. reduce la entrada
+        # 2. llama recursivamente con la entrada reducida
+        # 3. combina tu parte local con lo que te devuelvan
+        retornar combinar(local, f(entrada_reducida))</pre>
+            <p>Cada llamada solo necesita confiar en que la llamada recursiva "más pequeña" va a funcionar. No hay que imaginarse toda la cadena a la vez — solo un paso.</p>
+          </section>
+
+          <section>
+            <h3>Preguntas guía para diseñar cualquier función recursiva</h3>
+            <ul class="questions">
+              <li>¿Cuál es el caso más simple que puedo resolver sin volver a llamar a la función?</li>
+              <li>¿Cómo hago que la entrada sea más pequeña en cada llamada, para acercarme a ese caso base?</li>
+              <li>¿Qué parte del problema puedo resolver localmente, antes de la llamada recursiva?</li>
+              <li>Una vez la llamada recursiva regrese con su resultado, ¿cómo lo combino con mi parte local?</li>
+              <li>¿Todos los caminos posibles de entrada llegan, tarde o temprano, al caso base?</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tres errores que rompen la recursión</h3>
+            <div class="errors">
+              <div class="error-item">
+                <h4>1. Sin caso base</h4>
+                <p>Nunca hay condición de parada. Cada llamada apila otra llamada, para siempre → stack overflow.</p>
+              </div>
+              <div class="error-item">
+                <h4>2. Caso base inalcanzable</h4>
+                <p>El caso base existe, pero la forma en que se reduce la entrada nunca llega exactamente a él (ej: restar de 2 en 2 partiendo de un impar cuando el caso base es n == 0).</p>
+              </div>
+              <div class="error-item">
+                <h4>3. Sin progreso</h4>
+                <p>La llamada recursiva recibe la misma entrada que la actual (se olvidó reducirla), así que nunca se acerca al caso base.</p>
+              </div>
+            </div>
+          </section>
+
+          <div class="ch-diagram">
+            <h3>Cómo se mueve la pila</h3>
+            <svg viewBox="0 0 760 140">
+              <g font-family="IBM Plex Mono" font-size="11" fill="#16232F">
+                <rect x="30" y="88" width="120" height="26" fill="#F3F6F9" stroke="#B96A22"/>
+                <text x="90" y="105" text-anchor="middle">f(4)</text>
+                <rect x="30" y="59" width="120" height="26" fill="#F3F6F9" stroke="#B96A22"/>
+                <text x="90" y="76" text-anchor="middle">f(3)</text>
+                <rect x="30" y="30" width="120" height="26" fill="#F3F6F9" stroke="#B96A22"/>
+                <text x="90" y="47" text-anchor="middle">f(2)</text>
+                <rect x="30" y="1" width="120" height="26" fill="#FBEFE6" stroke="#B4405C"/>
+                <text x="90" y="18" text-anchor="middle">f(1) — caso base</text>
+                <text x="90" y="128" text-anchor="middle" fill="#55677A">apilando</text>
+
+                <text x="270" y="65" font-size="20" fill="#55677A">→</text>
+
+                <rect x="330" y="88" width="120" height="26" fill="#EAF6F4" stroke="#158377"/>
+                <text x="390" y="105" text-anchor="middle">f(4) = 24</text>
+                <rect x="330" y="59" width="120" height="26" fill="#EAF6F4" stroke="#158377" stroke-dasharray="3,2"/>
+                <text x="390" y="76" text-anchor="middle" fill="#55677A">f(3) ya retornó</text>
+                <text x="390" y="128" text-anchor="middle" fill="#55677A">desapilando</text>
+
+                <text x="560" y="65" font-size="20" fill="#55677A">→</text>
+                <rect x="610" y="88" width="120" height="26" fill="#FFFFFF" stroke="#D7DEE6" stroke-dasharray="2,3"/>
+                <text x="670" y="105" text-anchor="middle" fill="#55677A">pila vacía</text>
+                <text x="670" y="128" text-anchor="middle" fill="#55677A">resultado entregado</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================================
+   1) GENERADORES DE TRAZA — instrumentan funciones recursivas reales para
+      registrar, evento a evento, qué le pasa exactamente a la pila.
+   ========================================================================= */
+
+class Overflow extends Error {}
+const STACK_CAP = 18; // límite de simulación para detectar recursión infinita
+
+function buildFactorialTrace(n){
+  const trace = []; const stack = []; let idc = 0;
+  const snap = () => stack.map(f => ({...f}));
+  const emit = (s) => trace.push({ ...s, stack: snap() });
+
+  function factorial(n){
+    const frame = { id: idc++, fn:'factorial', args:`n = ${n}`, rawArg:n, status:'activo', result:null };
+    stack.push(frame);
+    emit({ type:'push', line:0, frameId:frame.id,
+      caption:`Se llama a factorial(${n}). Se crea un marco nuevo con su propia copia de n = ${n} y se apila encima de todo lo demás.` });
+
+    if(n <= 1){
+      frame.result = 1; frame.status = 'base';
+      emit({ type:'base', line:2, frameId:frame.id,
+        caption:`factorial(${n}) llega al caso base (n ≤ 1): retorna 1 de inmediato, sin hacer más llamadas.` });
+    } else {
+      frame.status = 'esperando';
+      emit({ type:'pre-call', line:4, frameId:frame.id,
+        caption:`factorial(${n}) no puede terminar todavía: necesita el resultado de factorial(${n-1}). Queda "esperando" mientras esa llamada se resuelve.` });
+      const sub = factorial(n-1);
+      frame.result = n*sub; frame.status = 'listo';
+      emit({ type:'compute', line:4, frameId:frame.id, incoming:sub,
+        caption:`factorial(${n-1}) ya devolvió ${sub}. Con ese valor, factorial(${n}) calcula ${n} × ${sub} = ${frame.result}.` });
+    }
+    emit({ type:'pop', line:4, frameId:frame.id, outgoing:frame.result,
+      caption:`factorial(${n}) retorna ${frame.result}. Su marco se desapila y ese valor viaja hacia quien lo llamó.` });
+    stack.pop();
+    return frame.result;
+  }
+
+  const final = factorial(n);
+  trace.push({ type:'fin', line:null, stack:[], finalValue: final, caption:`Resultado final: factorial(${n}) = ${final}. La pila queda vacía otra vez.` });
+  return trace;
+}
+
+function buildSumaTrace(arr){
+  const trace = []; const stack = []; let idc = 0;
+  const snap = () => stack.map(f => ({...f}));
+  const emit = (s) => trace.push({ ...s, stack: snap() });
+  const showArr = () => '[' + arr.join(', ') + ']';
+
+  function suma(i){
+    const frame = { id:idc++, fn:'sumaLista', args:`lista, i = ${i}`, rawArg:i, status:'activo', result:null };
+    stack.push(frame);
+    emit({ type:'push', line:0, frameId:frame.id,
+      caption:`Se llama a sumaLista(lista, ${i}). El marco guarda su propio i = ${i}; la lista no se copia, solo se comparte.` });
+
+    if(i === arr.length){
+      frame.result = 0; frame.status = 'base';
+      emit({ type:'base', line:2, frameId:frame.id,
+        caption:`i = ${i} llegó al final de la lista (caso base): retorna 0, no queda nada por sumar.` });
+    } else {
+      frame.status = 'esperando';
+      emit({ type:'pre-call', line:4, frameId:frame.id,
+        caption:`Antes de responder, sumaLista(lista, ${i}) necesita lo que devuelva sumaLista(lista, ${i+1}), es decir, la suma del resto de la lista.` });
+      const sub = suma(i+1);
+      frame.result = arr[i] + sub; frame.status = 'listo';
+      emit({ type:'compute', line:4, frameId:frame.id, incoming:sub,
+        caption:`sumaLista(lista, ${i+1}) devolvió ${sub}. Ahora se suma el elemento local: ${arr[i]} + ${sub} = ${frame.result}.` });
+    }
+    emit({ type:'pop', line:4, frameId:frame.id, outgoing:frame.result,
+      caption:`sumaLista(lista, ${i}) retorna ${frame.result} y se desapila.` });
+    stack.pop();
+    return frame.result;
+  }
+
+  const final = suma(0);
+  trace.push({ type:'fin', line:null, stack:[], finalValue: final, caption:`Resultado final: la suma de ${showArr()} es ${final}.` });
+  return trace;
+}
+
+function buildFibonacciTrace(n){
+  const trace = []; const stack = []; const nodes = []; let idc = 0, nc = 0;
+  const snap = () => stack.map(f => ({...f}));
+  const emit = (s) => trace.push({ ...s, stack: snap(), nodes: nodes.map(nd => ({...nd})) });
+
+  function fib(n, parent, depth){
+    const frame = { id:idc++, fn:'fib', args:`n = ${n}`, rawArg:n, status:'activo', result:null };
+    const nodeId = nc++;
+    nodes.push({ id:nodeId, parent, n, depth, status:'activo', result:null });
+    stack.push(frame);
+    emit({ type:'push', line:0, frameId:frame.id, nodeId,
+      caption:`Se llama a fib(${n}). Nuevo marco en la pila y nuevo nodo en el árbol de llamadas.` });
+
+    if(n <= 1){
+      frame.result = n; frame.status = 'base';
+      nodes.find(x=>x.id===nodeId).status = 'base';
+      nodes.find(x=>x.id===nodeId).result = n;
+      emit({ type:'base', line:2, frameId:frame.id, nodeId,
+        caption:`fib(${n}) es caso base: retorna ${n} sin llamar a nadie más.` });
+    } else {
+      frame.status = 'esperando';
+      emit({ type:'pre-call', line:4, frameId:frame.id, nodeId,
+        caption:`fib(${n}) llama primero a fib(${n-1}) — la rama izquierda debe resolverse antes de continuar.` });
+      const a = fib(n-1, nodeId, depth+1);
+      nodes.find(x=>x.id===nodeId).status = 'esperando';
+      emit({ type:'pre-call', line:5, frameId:frame.id, nodeId,
+        caption:`fib(${n}) ya obtuvo fib(${n-1}) = ${a}. Ahora llama a fib(${n-2}) — la rama derecha.` });
+      const b = fib(n-2, nodeId, depth+1);
+      frame.result = a+b; frame.status = 'listo';
+      nodes.find(x=>x.id===nodeId).status = 'listo';
+      nodes.find(x=>x.id===nodeId).result = frame.result;
+      emit({ type:'compute', line:5, frameId:frame.id, nodeId,
+        caption:`fib(${n}) ya tiene sus dos mitades: ${a} + ${b} = ${frame.result}.` });
+    }
+    emit({ type:'pop', line:5, frameId:frame.id, nodeId, outgoing:frame.result,
+      caption:`fib(${n}) retorna ${frame.result} y se desapila. El nodo queda marcado como resuelto en el árbol, aunque ya no esté en la pila.` });
+    stack.pop();
+    return frame.result;
+  }
+
+  const final = fib(n, null, 0);
+  trace.push({ type:'fin', line:null, stack:[], finalValue: final, nodes: nodes.map(nd=>({...nd})),
+    caption:`Resultado final: fib(${n}) = ${final}. Nota cuántas veces se repitieron llamadas con el mismo n: por eso la recursión simple de Fibonacci es costosa.` });
+  return trace;
+}
+
+/* ---- Definiciones para el selector del simulador ---- */
+
+const DEFS = {
+  factorial: {
+    label: 'n', placeholder: '4',
+    code: ['función factorial(n):','    si n <= 1:','        retornar 1','    si_no:','        retornar n * factorial(n - 1)'],
+    parse: (raw) => { const n=parseInt(raw,10); if(isNaN(n)||n<0||n>9) return {error:'Usa un entero entre 0 y 9.'}; return {value:n}; },
+    build: (n) => buildFactorialTrace(n), hasTree: false
+  },
+  suma: {
+    label: 'lista (separada por comas)', placeholder: '4, 2, 7, 1',
+    code: ['función sumaLista(lista, i):','    si i == longitud(lista):','        retornar 0','    si_no:','        retornar lista[i] + sumaLista(lista, i + 1)'],
+    parse: (raw) => { const arr=raw.split(',').map(s=>parseInt(s.trim(),10)); if(arr.length===0||arr.some(isNaN)) return {error:'Escribe números separados por comas, ej: 4, 2, 7, 1'}; if(arr.length>7) return {error:'Usa máximo 7 números para que la pila se pueda leer bien.'}; return {value:arr}; },
+    build: (arr) => buildSumaTrace(arr), hasTree: false
+  },
+  fibonacci: {
+    label: 'n', placeholder: '4',
+    code: ['función fib(n):','    si n <= 1:','        retornar n','    si_no:','        retornar fib(n - 1) + fib(n - 2)'],
+    parse: (raw) => { const n=parseInt(raw,10); if(isNaN(n)||n<0||n>6) return {error:'Usa un entero entre 0 y 6 (el árbol crece muy rápido).'}; return {value:n}; },
+    build: (n) => buildFibonacciTrace(n), hasTree: true
+  }
+};
+
+/* =========================================================================
+   2) EJERCICIOS — funciones correctas y con errores típicos, con las
+      respuestas correctas calculadas directamente a partir de su traza.
+   ========================================================================= */
+
+function buildPotenciaTrace(base, exp){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(s)=>trace.push({...s, stack:snap()});
+  function potencia(exp){
+    const frame={id:idc++, fn:'potencia', args:`base=${base}, exp=${exp}`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a potencia(base=${base}, exp=${exp}).`});
+    if(exp===0){ frame.result=1; frame.status='base';
+      emit({type:'base', frameId:frame.id, caption:`exp = 0: retorna 1.`});
+    } else {
+      frame.status='esperando';
+      emit({type:'pre-call', frameId:frame.id, caption:`Necesita potencia(base=${base}, exp=${exp-1}) antes de continuar.`});
+      const sub=potencia(exp-1);
+      frame.result=base*sub; frame.status='listo';
+      emit({type:'compute', frameId:frame.id, incoming:sub, caption:`${base} × ${sub} = ${frame.result}.`});
+    }
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna ${frame.result} y se desapila.`});
+    stack.pop();
+    return frame.result;
+  }
+  const final = potencia(exp);
+  trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: ${final}`});
+  return { trace, overflow:false };
+}
+
+function buildSumaDigitosTrace(n){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(s)=>trace.push({...s, stack:snap()});
+  function sumaDigitos(n){
+    const frame={id:idc++, fn:'sumaDigitos', args:`n=${n}`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a sumaDigitos(${n}).`});
+    if(n<10){ frame.result=n; frame.status='base';
+      emit({type:'base', frameId:frame.id, caption:`n=${n} < 10: retorna ${n} (es un solo dígito).`});
+    } else {
+      frame.status='esperando';
+      const resto = Math.floor(n/10);
+      const digito = n%10;
+      emit({type:'pre-call', frameId:frame.id, caption:`Separa el último dígito (${digito}) y llama a sumaDigitos(${resto}).`});
+      const sub=sumaDigitos(resto);
+      frame.result=digito+sub; frame.status='listo';
+      emit({type:'compute', frameId:frame.id, incoming:sub, caption:`${digito} + ${sub} = ${frame.result}.`});
+    }
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna ${frame.result} y se desapila.`});
+    stack.pop();
+    return frame.result;
+  }
+  const final = sumaDigitos(n);
+  trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: ${final}`});
+  return { trace, overflow:false };
+}
+
+function buildInvertirTrace(s){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(st)=>trace.push({...st, stack:snap()});
+  function invertir(s){
+    const frame={id:idc++, fn:'invertir', args:`s="${s}"`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a invertir("${s}").`});
+    if(s.length===0){ frame.result=''; frame.status='base';
+      emit({type:'base', frameId:frame.id, caption:`Cadena vacía: retorna "".`});
+    } else {
+      frame.status='esperando';
+      emit({type:'pre-call', frameId:frame.id, caption:`Llama a invertir("${s.slice(1)}").`});
+      const sub = invertir(s.slice(1));
+      frame.result = s[0] + sub; frame.status='listo';
+      emit({type:'compute', frameId:frame.id, incoming:sub, caption:`"${s[0]}" + "${sub}" = "${frame.result}".`});
+    }
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna "${frame.result}" y se desapila.`});
+    stack.pop();
+    return frame.result;
+  }
+  const final = invertir(s);
+  trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: "${final}"`});
+  return { trace, overflow:false };
+}
+
+function buildNoBaseCaseTrace(n){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(s)=>trace.push({...s, stack:snap()});
+  function cuenta(n){
+    if(stack.length>=STACK_CAP) throw new Overflow();
+    const frame={id:idc++, fn:'cuenta', args:`n=${n}`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a cuenta(${n}). (Esta función no tiene ningún caso base.)`});
+    frame.status='esperando';
+    emit({type:'pre-call', frameId:frame.id, caption:`Llama a cuenta(${n-1}) sin ninguna condición que detenga la recursión.`});
+    const sub = cuenta(n-1);
+    frame.result = n+sub; frame.status='listo';
+    emit({type:'compute', frameId:frame.id, incoming:sub, caption:`${n} + ${sub} = ${frame.result}.`});
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna ${frame.result}.`});
+    stack.pop();
+    return frame.result;
+  }
+  try{
+    const final = cuenta(n);
+    trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: ${final}`});
+    return { trace, overflow:false };
+  } catch(e){
+    if(e instanceof Overflow){
+      trace.push({type:'overflow', stack:[], caption:`La pila superó ${STACK_CAP} marcos sin llegar nunca a un caso base: es una recursión infinita. En un programa real esto termina en un error de "stack overflow".`});
+      return { trace, overflow:true };
+    }
+    throw e;
+  }
+}
+
+function buildUnreachableBaseTrace(n){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(s)=>trace.push({...s, stack:snap()});
+  function cuenta(n){
+    if(stack.length>=STACK_CAP) throw new Overflow();
+    const frame={id:idc++, fn:'cuenta', args:`n=${n}`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a cuenta(${n}).`});
+    if(n===0){ frame.result=0; frame.status='base';
+      emit({type:'base', frameId:frame.id, caption:`n = 0: retorna 0.`});
+    } else {
+      frame.status='esperando';
+      emit({type:'pre-call', frameId:frame.id, caption:`Llama a cuenta(${n-2}) (resta de 2 en 2).`});
+      const sub=cuenta(n-2);
+      frame.result=n+sub; frame.status='listo';
+      emit({type:'compute', frameId:frame.id, incoming:sub, caption:`${n} + ${sub} = ${frame.result}.`});
+    }
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna ${frame.result}.`});
+    stack.pop();
+    return frame.result;
+  }
+  try{
+    const final = cuenta(n);
+    trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: ${final}`});
+    return { trace, overflow:false };
+  } catch(e){
+    if(e instanceof Overflow){
+      trace.push({type:'overflow', stack:[], caption:`Como n empieza en un número impar y se resta de 2 en 2, n nunca llega exactamente a 0: pasa de 1 a -1 saltándose el caso base. Recursión infinita → stack overflow.`});
+      return { trace, overflow:true };
+    }
+    throw e;
+  }
+}
+
+function buildNoProgressTrace(n){
+  const trace=[]; const stack=[]; let idc=0;
+  const snap=()=>stack.map(f=>({...f}));
+  const emit=(s)=>trace.push({...s, stack:snap()});
+  function repetir(n){
+    if(stack.length>=STACK_CAP) throw new Overflow();
+    const frame={id:idc++, fn:'repetir', args:`n=${n}`, status:'activo', result:null};
+    stack.push(frame);
+    emit({type:'push', frameId:frame.id, caption:`Llama a repetir(${n}).`});
+    if(n===0){ frame.result=0; frame.status='base';
+      emit({type:'base', frameId:frame.id, caption:`n = 0: retorna 0.`});
+    } else {
+      frame.status='esperando';
+      emit({type:'pre-call', frameId:frame.id, caption:`Llama a repetir(${n}) otra vez... con el mismo n (nunca se decrementa).`});
+      const sub=repetir(n);
+      frame.result=n+sub; frame.status='listo';
+      emit({type:'compute', frameId:frame.id, incoming:sub, caption:`${n} + ${sub} = ${frame.result}.`});
+    }
+    emit({type:'pop', frameId:frame.id, outgoing:frame.result, caption:`Retorna ${frame.result}.`});
+    stack.pop();
+    return frame.result;
+  }
+  try{
+    const final = repetir(n);
+    trace.push({type:'fin', stack:[], finalValue:final, caption:`Resultado final: ${final}`});
+    return { trace, overflow:false };
+  } catch(e){
+    if(e instanceof Overflow){
+      trace.push({type:'overflow', stack:[], caption:`n nunca cambia entre una llamada y la siguiente: no hay ningún progreso hacia el caso base. Recursión infinita → stack overflow.`});
+      return { trace, overflow:true };
+    }
+    throw e;
+  }
+}
+
+function expectedFromResult(r){
+  const depth = Math.max(...r.trace.map(s => s.stack.length), 0);
+  const calls = r.trace.filter(s => s.type === 'push').length;
+  let resultAccept;
+  if(r.overflow){
+    resultAccept = ['no termina','no termina (stack overflow)','stack overflow','nunca termina','recursion infinita','recursión infinita'];
+  } else {
+    const finStep = r.trace[r.trace.length - 1];
+    resultAccept = [String(finStep.finalValue).trim().toLowerCase()];
+  }
+  return { depth, calls, resultAccept };
+}
+
+const EXERCISES = [
+  {
+    id: 'potencia', title: 'potencia(base, exp)', tag: 'ok',
+    code: ['función potencia(base, exp):','    si exp == 0:','        retornar 1','    si_no:','        retornar base * potencia(base, exp - 1)'],
+    hint: 'Llamada inicial: potencia(2, 5)',
+    run: () => buildPotenciaTrace(2, 5)
+  },
+  {
+    id: 'sumaDigitos', title: 'sumaDigitos(n)', tag: 'ok',
+    code: ['función sumaDigitos(n):','    si n < 10:','        retornar n','    si_no:','        retornar (n % 10) + sumaDigitos(n // 10)'],
+    hint: 'Llamada inicial: sumaDigitos(4837)  —  "//" es división entera',
+    run: () => buildSumaDigitosTrace(4837)
+  },
+  {
+    id: 'invertir', title: 'invertir(s)', tag: 'bug',
+    code: ['función invertir(s):','    si longitud(s) == 0:','        retornar ""','    si_no:','        retornar s[0] + invertir(s[1:])'],
+    hint: 'Llamada inicial: invertir("sol")  —  esta función sí termina, pero ¿hace lo que parece?',
+    run: () => buildInvertirTrace('sol')
+  },
+  {
+    id: 'sinCasoBase', title: 'cuenta(n) — sin caso base', tag: 'bug',
+    code: ['función cuenta(n):','    retornar n + cuenta(n - 1)'],
+    hint: 'Llamada inicial: cuenta(5)',
+    run: () => buildNoBaseCaseTrace(5)
+  },
+  {
+    id: 'casoBaseInalcanzable', title: 'cuenta(n) — caso base inalcanzable', tag: 'bug',
+    code: ['función cuenta(n):','    si n == 0:','        retornar 0','    si_no:','        retornar n + cuenta(n - 2)'],
+    hint: 'Llamada inicial: cuenta(5)  —  fíjate en el paso con el que decrece n',
+    run: () => buildNoProgressLikeUnreachable()
+  },
+  {
+    id: 'sinProgreso', title: 'repetir(n) — no avanza hacia el caso base', tag: 'bug',
+    code: ['función repetir(n):','    si n == 0:','        retornar 0','    si_no:','        retornar n + repetir(n)'],
+    hint: 'Llamada inicial: repetir(3)  —  observa qué argumento recibe cada llamada recursiva',
+    run: () => buildNoProgressTrace(3)
+  }
+];
+function buildNoProgressLikeUnreachable(){ return buildUnreachableBaseTrace(5); }
+
+/* =========================================================================
+   3) ESTADO Y RENDERIZADO DEL SIMULADOR
+   ========================================================================= */
+
+let currentTrace = [];
+let currentStep = 0;
+let currentDef = DEFS.factorial;
+let activeCodeLines = [];
+let activeHasTree = false;
+let treeLayout = {};
+let playTimer = null;
+let pendingIndex = null;
+
+const el = (id) => document.getElementById(id);
+const fnSelect = el('fn-select');
+const paramInput = el('param-input');
+const paramLabel = el('param-label');
+const btnGenerate = el('btn-generate');
+const codeLinesEl = el('code-lines');
+const stackContainer = el('stack-container');
+const flowBanner = el('flow-banner');
+const treePanel = el('tree-panel');
+const treeSvg = el('tree-svg');
+const captionEl = el('caption');
+const scrubber = el('scrubber');
+const stepCounter = el('step-counter');
+const speedInput = el('speed');
+const btnFirst = el('btn-first'), btnPrev = el('btn-prev'), btnPlay = el('btn-play'),
+      btnNext = el('btn-next'), btnLast = el('btn-last');
+const predictToggle = el('predict-toggle');
+const predictOverlay = el('predict-overlay');
+const predictPrompt = el('predict-prompt');
+const predictInput = el('predict-input');
+const predictCheck = el('predict-check');
+const predictContinue = el('predict-continue');
+const predictFeedback = el('predict-feedback');
+
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function onFnChange(){
+  currentDef = DEFS[fnSelect.value];
+  paramLabel.textContent = currentDef.label;
+  paramInput.value = currentDef.placeholder;
+  activeCodeLines = currentDef.code;
+  activeHasTree = currentDef.hasTree;
+  renderCode();
+  treePanel.hidden = !activeHasTree;
+}
+
+function renderCode(){
+  codeLinesEl.innerHTML = activeCodeLines.map((line,i) =>
+    `<span class="code-line" data-line="${i}">${escapeHtml(line)}</span>`
+  ).join('\n');
+}
+
+function computeTreeLayout(nodes){
+  const children = {};
+  nodes.forEach(n => { children[n.id] = []; });
+  nodes.forEach(n => { if(n.parent !== null) children[n.parent].push(n.id); });
+  let leafX = 0;
+  const pos = {};
+  function place(id){
+    const kids = children[id];
+    if(kids.length === 0){ pos[id] = leafX; leafX += 1; return pos[id]; }
+    const xs = kids.map(place);
+    pos[id] = xs.reduce((a,b)=>a+b,0) / xs.length;
+    return pos[id];
+  }
+  const roots = nodes.filter(n => n.parent === null).map(n => n.id);
+  roots.forEach(place);
+  const maxLeaf = Math.max(1, leafX - 1);
+  const maxDepth = Math.max(...nodes.map(n => n.depth), 0);
+  const W = 900, H = 260, marginX = 60, marginY = 34;
+  const layout = {};
+  nodes.forEach(n => {
+    const x = maxLeaf === 0 ? W/2 : marginX + (pos[n.id]/maxLeaf) * (W - 2*marginX);
+    const y = marginY + (n.depth/(maxDepth || 1)) * (H - 2*marginY);
+    layout[n.id] = { x, y };
+  });
+  return layout;
+}
+
+function generate(){
+  const raw = paramInput.value;
+  const parsed = currentDef.parse(raw);
+  if(parsed.error){ captionEl.textContent = parsed.error; captionEl.className = 'caption'; return; }
+  currentTrace = currentDef.build(parsed.value);
+  currentStep = 0;
+  if(activeHasTree){
+    const finalNodes = currentTrace[currentTrace.length-1].nodes || [];
+    treeLayout = computeTreeLayout(finalNodes);
+  }
+  scrubber.max = currentTrace.length - 1;
+  scrubber.value = 0;
+  renderStep();
+}
+
+function loadExternalTrace(trace, codeLines){
+  switchTab('sim');
+  predictToggle.checked = false;
+  togglePredictAvailability();
+  activeCodeLines = codeLines;
+  activeHasTree = false;
+  treePanel.hidden = true;
+  currentTrace = trace;
+  currentStep = 0;
+  renderCode();
+  scrubber.max = currentTrace.length - 1;
+  scrubber.value = 0;
+  renderStep();
+  el('tab-sim').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderStep(){
+  const step = currentTrace[currentStep];
+  if(!step) return;
+
+  document.querySelectorAll('.code-line').forEach(l => l.classList.remove('active'));
+  if(step.line !== null && step.line !== undefined){
+    const l = codeLinesEl.querySelector(`[data-line="${step.line}"]`);
+    if(l) l.classList.add('active');
+  }
+
+  stackContainer.innerHTML = '';
+  if(step.type === 'overflow'){
+    const msg = document.createElement('div');
+    msg.className = 'overflow-msg';
+    msg.textContent = '⚠ La simulación se detuvo: la pila creció sin parar (stack overflow).';
+    stackContainer.appendChild(msg);
+  } else if(step.stack.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty-stack';
+    empty.textContent = currentStep === 0 ? 'La pila está vacía. Presiona "Siguiente" para empezar.' : 'La pila quedó vacía: la ejecución terminó.';
+    stackContainer.appendChild(empty);
+  } else {
+    step.stack.forEach(frame => {
+      const div = document.createElement('div');
+      div.className = `frame status-${frame.status}` + (frame.id === step.frameId ? ' highlight' : '');
+      const statusText = { activo:'activo', esperando:'esperando', listo:'listo', base:'caso base' }[frame.status];
+      div.innerHTML = `
+        <div class="fn-line">
+          <span class="fn-name">${frame.fn}(${escapeHtml(frame.args)})</span>
+          <span class="status-tag">${statusText}</span>
+        </div>
+        ${frame.result !== null ? `<div class="result-line">retorna → <b>${escapeHtml(frame.result)}</b></div>` : ''}
+      `;
+      stackContainer.appendChild(div);
+    });
+  }
+
+  flowBanner.classList.remove('show');
+  void flowBanner.offsetWidth;
+  if(step.type === 'compute'){
+    flowBanner.textContent = `↩  llega un valor devuelto: ${step.incoming}`;
+    flowBanner.classList.add('show');
+  } else if(step.type === 'pop'){
+    flowBanner.textContent = `⤴  sale un valor hacia arriba: ${step.outgoing}`;
+    flowBanner.classList.add('show');
+  } else {
+    flowBanner.textContent = '';
+  }
+
+  if(activeHasTree){ renderTree(step.nodes || []); }
+
+  captionEl.textContent = step.caption;
+  captionEl.className = 'caption' + (step.type === 'fin' ? ' is-final' : (step.type === 'overflow' ? ' is-final' : ''));
+  if(step.type === 'overflow') captionEl.style.borderLeftColor = 'var(--accent-bad)';
+  else captionEl.style.borderLeftColor = '';
+
+  scrubber.value = currentStep;
+  stepCounter.textContent = `Paso ${currentStep} / ${currentTrace.length - 1}`;
+  btnFirst.disabled = btnPrev.disabled = currentStep === 0;
+  btnLast.disabled = btnNext.disabled = currentStep === currentTrace.length - 1;
+}
+
+function renderTree(nodes){
+  if(nodes.length === 0){ treeSvg.innerHTML = ''; return; }
+  let svg = '';
+  nodes.forEach(n => {
+    if(n.parent === null) return;
+    const p = treeLayout[n.parent], c = treeLayout[n.id];
+    if(!p || !c) return;
+    const done = n.status === 'listo' || n.status === 'base';
+    svg += `<line class="edge${done ? ' done' : ''}" x1="${p.x}" y1="${p.y+12}" x2="${c.x}" y2="${c.y-12}"></line>`;
+  });
+  nodes.forEach(n => {
+    const p = treeLayout[n.id]; if(!p) return;
+    svg += `<g><rect class="node-box ${n.status}" x="${p.x-22}" y="${p.y-13}" width="44" height="26" rx="2"></rect>
+      <text class="node-label" x="${p.x}" y="${p.y+2}">fib(${n.n})</text>
+      ${n.result !== null ? `<text class="node-result" x="${p.x}" y="${p.y+22}">= ${n.result}</text>` : ''}</g>`;
+  });
+  treeSvg.innerHTML = svg;
+}
+
+/* ---- Navegación básica ---- */
+
+function step(delta){
+  pause();
+  currentStep = Math.min(currentTrace.length - 1, Math.max(0, currentStep + delta));
+  renderStep();
+}
+function goTo(i){
+  pause();
+  currentStep = Math.min(currentTrace.length - 1, Math.max(0, i));
+  renderStep();
+}
+function play(){
+  if(currentStep >= currentTrace.length - 1) currentStep = 0;
+  btnPlay.textContent = '⏸ Pausar';
+  const speeds = { 1:1600, 2:1150, 3:800, 4:500, 5:300 };
+  clearInterval(playTimer);
+  playTimer = setInterval(() => {
+    if(currentStep >= currentTrace.length - 1){ pause(); return; }
+    currentStep += 1; renderStep();
+  }, speeds[speedInput.value]);
+}
+function pause(){ clearInterval(playTimer); playTimer = null; btnPlay.textContent = '▶ Reproducir'; }
+function togglePlay(){ if(playTimer) pause(); else play(); }
+
+/* ---- Modo predicción ---- */
+
+const GATED_TYPES = ['base','compute','pop','fin'];
+
+function getStepAnswerValue(step){
+  if(step.type === 'pop') return step.outgoing;
+  if(step.type === 'fin') return step.finalValue;
+  const f = (step.stack || []).find(fr => fr.id === step.frameId);
+  return f ? f.result : '';
+}
+
+function promptFor(step){
+  if(step.type === 'pop') return 'El marco activo está a punto de desapilarse. ¿Qué valor va a retornar?';
+  if(step.type === 'compute') return 'Este marco está a punto de combinar el valor recibido con su variable local. ¿Qué valor va a calcular?';
+  if(step.type === 'base') return 'Este marco llegó al caso base. ¿Qué valor va a retornar?';
+  if(step.type === 'fin') return 'Toda la recursión está por terminar. ¿Cuál es el resultado final?';
+  return '¿Qué valor esperas ver a continuación?';
+}
+
+function setTransportEnabled(enabled){
+  [btnFirst, btnPrev, btnNext, btnLast, scrubber].forEach(b => b.disabled = !enabled);
+  if(!predictToggle.checked) btnPlay.disabled = !enabled;
+}
+
+function requestAdvance(){
+  if(currentStep >= currentTrace.length - 1) return;
+  const next = currentTrace[currentStep + 1];
+  if(predictToggle.checked && GATED_TYPES.includes(next.type)){
+    openPredictOverlay(currentStep + 1, next);
+  } else {
+    currentStep += 1; renderStep();
+  }
+}
+
+function openPredictOverlay(nextIndex, nextStepData){
+  pendingIndex = nextIndex;
+  predictPrompt.textContent = promptFor(nextStepData);
+  predictInput.value = '';
+  predictInput.disabled = false;
+  predictFeedback.textContent = '';
+  predictFeedback.className = 'predict-feedback';
+  predictCheck.hidden = false;
+  predictContinue.hidden = true;
+  predictOverlay.hidden = false;
+  setTransportEnabled(false);
+  predictInput.focus();
+}
+
+function checkPrediction(){
+  const step = currentTrace[pendingIndex];
+  const expected = String(getStepAnswerValue(step)).trim();
+  const userVal = predictInput.value.trim();
+  const correct = userVal.toLowerCase() === expected.toLowerCase();
+  predictFeedback.textContent = correct
+    ? `✅ ¡Correcto! El valor es ${expected}.`
+    : `❌ Tu respuesta: "${userVal}". El valor correcto es ${expected}.`;
+  predictFeedback.className = 'predict-feedback ' + (correct ? 'ok' : 'bad');
+  predictInput.disabled = true;
+  predictCheck.hidden = true;
+  predictContinue.hidden = false;
+}
+
+function continuePrediction(){
+  predictOverlay.hidden = true;
+  setTransportEnabled(true);
+  currentStep = pendingIndex;
+  renderStep();
+}
+
+function togglePredictAvailability(){
+  if(predictToggle.checked){ pause(); btnPlay.disabled = true; btnPlay.title = 'Desactivado en modo predicción'; }
+  else { btnPlay.disabled = false; btnPlay.title = 'Reproducir / pausar'; }
+}
+
+/* =========================================================================
+   4) PRÁCTICA MANUAL — el estudiante decide cuándo apilar y cuándo retornar,
+      y calcula él mismo los valores. Se valida contra la traza de referencia.
+   ========================================================================= */
+
+const MANUAL_DEFS = {
+  factorial: { ...DEFS.factorial, manualArgLabel: 'n', placeholder:'5',
+    parse: (raw) => { const n=parseInt(raw,10); if(isNaN(n)||n<1||n>6) return {error:'Usa un entero entre 1 y 6.'}; return {value:n}; } },
+  suma: { ...DEFS.suma, manualArgLabel: 'i (índice)', placeholder:'3, 5, 2',
+    parse: (raw) => { const arr=raw.split(',').map(s=>parseInt(s.trim(),10)); if(arr.length===0||arr.some(isNaN)) return {error:'Escribe números separados por comas.'}; if(arr.length>5) return {error:'Usa máximo 5 números para la práctica manual.'}; return {value:arr}; } },
+  fibonacci: { ...DEFS.fibonacci, manualArgLabel: 'n', placeholder:'3',
+    parse: (raw) => { const n=parseInt(raw,10); if(isNaN(n)||n<1||n>4) return {error:'Usa un entero entre 1 y 4 (son muchas llamadas manuales).'}; return {value:n}; } }
+};
+
+let manualCurrentDef = null;
+let manualCheckpoints = [];
+let manualPointer = 0;
+let manualStack = [];
+let manualCorrectFirstTry = 0;
+let manualAttempts = 0;
+let manualPending = null; // { kind: 'push'|'pop', checkpoint }
+
+const mEl = (id) => document.getElementById(id);
+const manualFnSelect = mEl('manual-fn-select');
+const manualParamInput = mEl('manual-param-input');
+const manualParamLabel = mEl('manual-param-label');
+const manualCodeLines = mEl('manual-code-lines');
+const manualStackContainer = mEl('manual-stack-container');
+const manualProgressText = mEl('manual-progress-text');
+const manualAccuracyText = mEl('manual-accuracy-text');
+const manualErrorEl = mEl('manual-error');
+const manualFlashEl = mEl('manual-flash');
+const manualLogEl = mEl('manual-log');
+const manualCompletionEl = mEl('manual-completion');
+const btnManualStart = mEl('btn-manual-start');
+const btnManualPush = mEl('btn-manual-push');
+const btnManualPop = mEl('btn-manual-pop');
+const manualFormEl = mEl('manual-form');
+const manualFormPrompt = mEl('manual-form-prompt');
+const manualFormInput = mEl('manual-form-input');
+const manualFormConfirm = mEl('manual-form-confirm');
+const manualFormCancel = mEl('manual-form-cancel');
+const manualFormReveal = mEl('manual-form-reveal');
+const manualFormFeedback = mEl('manual-form-feedback');
+
+function buildManualCheckpoints(trace){
+  const cps = [];
+  trace.forEach(s => {
+    if(s.type === 'push'){
+      const f = s.stack.find(fr => fr.id === s.frameId);
+      cps.push({ kind:'push', frameId:s.frameId, fn:f.fn, argsDisplay:f.args, rawArg:f.rawArg });
+    } else if(s.type === 'pop'){
+      cps.push({ kind:'pop', frameId:s.frameId, value:s.outgoing });
+    }
+  });
+  return cps;
+}
+
+function onManualFnChange(){
+  manualCurrentDef = MANUAL_DEFS[manualFnSelect.value];
+  manualParamLabel.textContent = manualCurrentDef.label;
+  manualParamInput.value = manualCurrentDef.placeholder;
+  renderManualCode();
+}
+
+function renderManualCode(){
+  manualCodeLines.textContent = manualCurrentDef.code.join('\n');
+}
+
+function manualStart(){
+  manualCurrentDef = MANUAL_DEFS[manualFnSelect.value];
+  const parsed = manualCurrentDef.parse(manualParamInput.value);
+  if(parsed.error){ manualErrorEl.textContent = parsed.error; return; }
+  manualErrorEl.textContent = '';
+  const fullTrace = manualCurrentDef.build(parsed.value);
+  manualCheckpoints = buildManualCheckpoints(fullTrace);
+  manualPointer = 0;
+  manualStack = [];
+  manualCorrectFirstTry = 0;
+  manualAttempts = 0;
+  manualPending = null;
+  manualLogEl.innerHTML = '';
+  manualFlashEl.textContent = '';
+  manualCompletionEl.hidden = true;
+  btnManualPush.disabled = false;
+  btnManualPop.disabled = false;
+  closeManualForm();
+  renderManualStack();
+  updateManualProgress();
+}
+
+function updateManualProgress(){
+  manualProgressText.textContent = `Paso ${manualPointer} / ${manualCheckpoints.length}`;
+  manualAccuracyText.textContent = `Precisión: ${manualCorrectFirstTry}/${manualCheckpoints.length}`;
+}
+
+function renderManualStack(){
+  manualStackContainer.innerHTML = '';
+  if(manualStack.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty-stack';
+    empty.textContent = manualPointer === 0 ? 'Tu pila está vacía. Empieza apilando la primera llamada.' : 'Tu pila quedó vacía otra vez: terminaste.';
+    manualStackContainer.appendChild(empty);
+    return;
+  }
+  manualStack.forEach((f, idx) => {
+    const div = document.createElement('div');
+    div.className = 'frame status-activo' + (idx === manualStack.length - 1 ? ' highlight' : '');
+    div.innerHTML = `<div class="fn-line"><span class="fn-name">${f.fn}(${escapeHtml(f.args)})</span></div>`;
+    manualStackContainer.appendChild(div);
+  });
+}
+
+function manualLog(msg){
+  const li = document.createElement('li');
+  li.textContent = msg;
+  manualLogEl.insertBefore(li, manualLogEl.firstChild);
+  while(manualLogEl.children.length > 10) manualLogEl.removeChild(manualLogEl.lastChild);
+}
+
+function manualClickPush(){
+  if(manualPointer >= manualCheckpoints.length) return;
+  const cp = manualCheckpoints[manualPointer];
+  if(cp.kind !== 'push'){
+    manualErrorEl.textContent = '❌ Todavía no corresponde apilar: el marco de arriba ya puede retornar. Usa "Retornar valor".';
+    return;
+  }
+  manualErrorEl.textContent = '';
+  openManualForm('push', cp);
+}
+
+function manualClickPop(){
+  if(manualPointer >= manualCheckpoints.length) return;
+  const cp = manualCheckpoints[manualPointer];
+  if(cp.kind !== 'pop'){
+    manualErrorEl.textContent = '❌ Todavía no corresponde retornar: primero falta apilar la siguiente llamada. Usa "Apilar llamada".';
+    return;
+  }
+  if(manualStack.length === 0){
+    manualErrorEl.textContent = '❌ No hay ningún marco en la pila para retornar.';
+    return;
+  }
+  manualErrorEl.textContent = '';
+  openManualForm('pop', cp);
+}
+
+function openManualForm(kind, cp){
+  manualPending = { kind, cp };
+  manualAttempts = 0;
+  if(kind === 'push'){
+    manualFormPrompt.textContent = `¿Cuál es el valor de ${manualCurrentDef.manualArgLabel} en la llamada que se apila ahora?`;
+  } else {
+    const top = manualStack[manualStack.length - 1];
+    manualFormPrompt.textContent = `El marco superior es ${top.fn}(${top.args}). ¿Qué valor retorna?`;
+  }
+  manualFormInput.value = '';
+  manualFormInput.disabled = false;
+  manualFormFeedback.textContent = '';
+  manualFormFeedback.className = 'manual-feedback';
+  manualFormConfirm.hidden = false;
+  manualFormReveal.hidden = true;
+  manualFormEl.hidden = false;
+  manualFormInput.focus();
+}
+
+function closeManualForm(){
+  manualFormEl.hidden = true;
+  manualPending = null;
+}
+
+function manualExpectedAnswer(){
+  const { kind, cp } = manualPending;
+  return kind === 'push' ? String(cp.rawArg) : String(cp.value);
+}
+
+function manualConfirm(){
+  if(!manualPending) return;
+  const { kind, cp } = manualPending;
+  const userVal = manualFormInput.value.trim();
+  const expected = manualExpectedAnswer();
+  const correct = userVal.toLowerCase() === expected.toLowerCase();
+  manualAttempts += 1;
+
+  if(correct){
+    if(manualAttempts === 1) manualCorrectFirstTry += 1;
+    applyManualAction(kind, cp);
+    manualPointer += 1;
+    closeManualForm();
+    renderManualStack();
+    updateManualProgress();
+    checkManualCompletion();
+  } else {
+    let hint = '';
+    if(manualAttempts === 2){
+      hint = kind === 'push'
+        ? ' Pista: mira cómo cambia el parámetro entre una llamada y la siguiente en el código.'
+        : ' Pista: combina la variable local de este marco con el último valor que recibiste.';
+    } else if(manualAttempts >= 3){
+      manualFormReveal.hidden = false;
+    }
+    manualFormFeedback.textContent = `❌ No es correcto todavía. Intenta de nuevo.${hint}`;
+    manualFormFeedback.className = 'manual-feedback bad';
+  }
+}
+
+function manualReveal(){
+  manualFormInput.value = manualExpectedAnswer();
+  manualFormFeedback.textContent = 'Respuesta mostrada — presiona "Confirmar" para continuar.';
+  manualFormFeedback.className = 'manual-feedback';
+}
+
+function applyManualAction(kind, cp){
+  if(kind === 'push'){
+    manualStack.push({ frameId: cp.frameId, fn: cp.fn, args: cp.argsDisplay });
+    manualLog(`✅ apilaste ${cp.fn}(${cp.argsDisplay})`);
+  } else {
+    const top = manualStack.pop();
+    manualFlashEl.textContent = `⤴ retornaste ${cp.value} desde ${top.fn}(${top.args})`;
+    manualLog(`✅ retornaste ${cp.value} de ${top.fn}(${top.args})`);
+  }
+}
+
+function checkManualCompletion(){
+  if(manualPointer >= manualCheckpoints.length){
+    const finalValue = manualCheckpoints[manualCheckpoints.length - 1].value;
+    manualCompletionEl.hidden = false;
+    manualCompletionEl.textContent = `🎉 ¡Completaste la simulación a mano! Resultado final: ${finalValue}. Precisión: ${manualCorrectFirstTry}/${manualCheckpoints.length} acciones correctas al primer intento.`;
+    btnManualPush.disabled = true;
+    btnManualPop.disabled = true;
+  }
+}
+
+function initManualPractice(){
+  onManualFnChange();
+  manualFnSelect.addEventListener('change', onManualFnChange);
+  btnManualStart.addEventListener('click', manualStart);
+  btnManualPush.addEventListener('click', manualClickPush);
+  btnManualPop.addEventListener('click', manualClickPop);
+  manualFormConfirm.addEventListener('click', manualConfirm);
+  manualFormCancel.addEventListener('click', closeManualForm);
+  manualFormReveal.addEventListener('click', manualReveal);
+  manualFormInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') manualConfirm(); });
+  mEl('btn-print-chuleta').addEventListener('click', () => { switchTab('ch'); window.print(); });
+  manualStart();
+}
+
+/* =========================================================================
+   5) PESTAÑAS Y EJERCICIOS
+   ========================================================================= */
+
+function switchTab(name){
+  ['sim','manual','ex','ch'].forEach(t => {
+    el('tab-' + t).hidden = (t !== name);
+    el('tab-btn-' + t).classList.toggle('active', t === name);
+  });
+}
+
+function renderExercises(){
+  const list = el('exercise-list');
+  list.innerHTML = '';
+  EXERCISES.forEach(ex => {
+    const result = ex.run();
+    const expected = expectedFromResult(result);
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+    card.innerHTML = `
+      <div class="exercise-head">
+        <h3>${escapeHtml(ex.title)}</h3>
+        <span class="tag ${ex.tag}">${ex.tag === 'ok' ? 'código correcto' : 'contiene un error'}</span>
+      </div>
+      <pre>${ex.code.map(escapeHtml).join('\n')}</pre>
+      <div class="exercise-hint">${escapeHtml(ex.hint)}</div>
+      <div class="exercise-fields">
+        <div class="field"><label>Profundidad máxima de la pila</label><input type="text" data-field="depth"></div>
+        <div class="field"><label>Número total de llamadas</label><input type="text" data-field="calls"></div>
+        <div class="field"><label>Resultado final</label><input type="text" data-field="result" placeholder='o "no termina"'></div>
+      </div>
+      <div class="exercise-actions">
+        <button class="primary" data-action="check">Comprobar</button>
+        <button data-action="sim">Ver simulación paso a paso</button>
+      </div>
+      <div class="exercise-feedback" data-feedback></div>
+    `;
+    const depthInput = card.querySelector('[data-field="depth"]');
+    const callsInput = card.querySelector('[data-field="calls"]');
+    const resultInput = card.querySelector('[data-field="result"]');
+    const feedbackEl = card.querySelector('[data-feedback]');
+
+    card.querySelector('[data-action="check"]').addEventListener('click', () => {
+      const userDepth = parseInt(depthInput.value, 10);
+      const userCalls = parseInt(callsInput.value, 10);
+      const userResult = resultInput.value.trim().toLowerCase();
+
+      const depthOk = userDepth === expected.depth;
+      const callsOk = userCalls === expected.calls;
+      const resultOk = expected.resultAccept.some(acc => userResult === acc || (userResult.length > 3 && acc.includes(userResult)));
+
+      feedbackEl.innerHTML = `
+        <div class="${depthOk ? 'ok' : 'bad'}">${depthOk ? '✅' : '❌'} Profundidad máxima: ${expected.depth}${depthOk ? '' : ` (tu respuesta: ${isNaN(userDepth) ? '—' : userDepth})`}</div>
+        <div class="${callsOk ? 'ok' : 'bad'}">${callsOk ? '✅' : '❌'} Total de llamadas: ${expected.calls}${callsOk ? '' : ` (tu respuesta: ${isNaN(userCalls) ? '—' : userCalls})`}</div>
+        <div class="${resultOk ? 'ok' : 'bad'}">${resultOk ? '✅' : '❌'} Resultado: ${expected.resultAccept[0]}${resultOk ? '' : ` (tu respuesta: "${resultInput.value.trim() || '—'}")`}</div>
+      `;
+    });
+
+    card.querySelector('[data-action="sim"]').addEventListener('click', () => {
+      loadExternalTrace(result.trace, ex.code);
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* =========================================================================
+   5) EVENTOS Y ARRANQUE
+   ========================================================================= */
+
+fnSelect.addEventListener('change', onFnChange);
+btnGenerate.addEventListener('click', generate);
+btnFirst.addEventListener('click', () => goTo(0));
+btnPrev.addEventListener('click', () => step(-1));
+btnNext.addEventListener('click', requestAdvance);
+btnLast.addEventListener('click', () => goTo(currentTrace.length - 1));
+btnPlay.addEventListener('click', togglePlay);
+scrubber.addEventListener('input', (e) => goTo(parseInt(e.target.value, 10)));
+speedInput.addEventListener('input', () => { if(playTimer){ pause(); play(); } });
+paramInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') generate(); });
+
+predictToggle.addEventListener('change', togglePredictAvailability);
+predictCheck.addEventListener('click', checkPrediction);
+predictContinue.addEventListener('click', continuePrediction);
+predictInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ if(!predictCheck.hidden) checkPrediction(); else continuePrediction(); }
+});
+
+['sim','manual','ex','ch'].forEach(t => el('tab-btn-' + t).addEventListener('click', () => switchTab(t)));
+
+onFnChange();
+generate();
+renderExercises();
+initManualPractice();
+</script>
+</body>
+</html>
