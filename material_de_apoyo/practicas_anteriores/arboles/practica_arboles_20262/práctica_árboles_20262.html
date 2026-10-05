@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Proyecto de curso: compresor de texto con codificación de Huffman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #fbfbf8;
+  --ink: #1c2230;
+  --muted: #5a6274;
+  --rule: #d6d9e0;
+  --blue: #1f4e8c;
+  --blue-soft: #e6eef8;
+  --ochre: #a8650a;
+  --ochre-soft: #f8eedd;
+  --green: #2f6b3f;
+  --green-soft: #e4f1e7;
+  --code-bg: #f1f2f5;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #161a22; --ink: #e5e8ee; --muted: #a3abbb; --rule: #333a48;
+    --blue: #8db6ec; --blue-soft: #1e2b40; --ochre: #e0a84f; --ochre-soft: #34291a;
+    --green: #8fcf9d; --green-soft: #1d3124; --code-bg: #20252f;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #161a22; --ink: #e5e8ee; --muted: #a3abbb; --rule: #333a48;
+  --blue: #8db6ec; --blue-soft: #1e2b40; --ochre: #e0a84f; --ochre-soft: #34291a;
+  --green: #8fcf9d; --green-soft: #1d3124; --code-bg: #20252f;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "Literata", Georgia, "Times New Roman", serif;
+  font-size: 1.02rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1.4rem 4rem; }
+h1, h2, h3, .meta, table, figcaption, .note-title {
+  font-family: "Public Sans", "Segoe UI", Arial, sans-serif;
+}
+header.doc { border-bottom: 3px solid var(--ink); padding-bottom: 1.2rem; margin-bottom: 2rem; }
+.inst { font-family: "Public Sans", "Segoe UI", Arial, sans-serif; color: var(--muted); font-size: .92rem; margin: 0 0 .9rem; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 1rem; letter-spacing: -.01em; }
+.bits { font-family: "JetBrains Mono", Consolas, monospace; color: var(--blue); font-size: .95rem; margin: 0 0 1.1rem; overflow-wrap: anywhere; }
+.meta { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1.2rem; font-size: .95rem; margin: 0; }
+.meta dt { font-weight: 700; }
+.meta dd { margin: 0; }
+h2 { font-size: 1.3rem; margin: 2.6rem 0 .8rem; padding-top: .6rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.05rem; margin: 1.8rem 0 .5rem; }
+p { margin: 0 0 1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1rem; }
+li { margin-bottom: .45rem; }
+code, .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: .88em; background: var(--code-bg); padding: .08em .3em; border-radius: 3px; }
+.box { border-left: 4px solid var(--blue); background: var(--blue-soft); padding: .9rem 1.1rem; margin: 1.3rem 0; }
+.box.ochre { border-color: var(--ochre); background: var(--ochre-soft); }
+.box.green { border-color: var(--green); background: var(--green-soft); }
+.box p:last-child, .box ul:last-child { margin-bottom: 0; }
+.note-title { font-weight: 700; display: block; margin-bottom: .3rem; }
+.table-wrap { overflow-x: auto; margin: 1rem 0 1.4rem; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { border-bottom: 1px solid var(--rule); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.formula { text-align: center; margin: 1rem 0; font-size: 1.05rem; }
+figure { margin: 1.4rem 0; }
+figure svg { width: 100%; height: auto; max-width: 560px; display: block; margin: 0 auto; }
+figcaption { font-size: .85rem; color: var(--muted); text-align: center; margin-top: .4rem; }
+.svg-edge { stroke: var(--muted); stroke-width: 1.6; }
+.svg-int { fill: var(--paper); stroke: var(--blue); stroke-width: 2; }
+.svg-leaf { fill: var(--ochre-soft); stroke: var(--ochre); stroke-width: 2; }
+.svg-t { fill: var(--ink); font-family: "Public Sans", Arial, sans-serif; }
+.svg-b { fill: var(--blue); font-family: "JetBrains Mono", monospace; font-weight: 600; }
+.svg-c { fill: var(--muted); font-family: "JetBrains Mono", monospace; }
+.stream { font-family: "JetBrains Mono", Consolas, monospace; font-size: .9rem; background: var(--code-bg); padding: .8rem 1rem; overflow-x: auto; white-space: pre; line-height: 1.5; }
+.c0 { color: var(--blue); } .c1 { color: var(--ochre); } .pad { color: var(--muted); text-decoration: underline dotted; }
+@media print {
+  :root { --paper: #fff; }
+  body { font-size: 10.5pt; }
+  main { max-width: none; padding: 0; }
+  h2 { break-after: avoid; }
+  figure, .box, table { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<header class="doc">
+  <p class="inst">Universidad de Medellín. Ingeniería de Sistemas. Estructuras de Datos</p>
+  <h1>Proyecto de curso: compresor de texto con codificación de Huffman</h1>
+  <p class="bits" aria-hidden="true">11011101 11010011 01000000</p>
+  <dl class="meta">
+    <dt>Entrega y sustentación</dt><dd>Martes 3 de noviembre de 2026</dd>
+    <dt>Modalidad</dt><dd>Grupos de hasta 3 personas. Los grupos pueden combinar estudiantes de los dos grupos del curso.</dd>
+    <dt>Sustentación</dt><dd>Práctica, con el programa en ejecución</dd>
+    <dt>Lenguaje</dt><dd>Python</dd>
+  </dl>
+</header>
+
+<h2>Contexto</h2>
+<p>El archivo digital de una biblioteca universitaria guarda miles de documentos en texto plano: actas, transcripciones, tesis antiguas digitalizadas y código fuente de proyectos de grado. El espacio en disco y el tiempo de transferencia cuestan, y la biblioteca necesita una herramienta que reduzca el tamaño de esos archivos sin perder un solo carácter. Si un acta se recupera con una tilde de menos, la herramienta no sirve.</p>
+<p>La codificación de Huffman asigna a cada carácter un código binario de longitud variable, más corto cuanto más frecuente es el carácter, de modo que ningún código es prefijo de otro. El proyecto consiste en construir un compresor y un descompresor basados en esta codificación y en medir, con datos, qué tanto comprime y por qué.</p>
+
+<h2>1. Qué se debe construir</h2>
+
+<h3>1.1 Símbolos</h3>
+<p>El programa trabaja a nivel de carácter. Cada carácter Unicode del archivo es un símbolo del alfabeto, incluidos espacios, saltos de línea, tabulaciones, signos de puntuación, letras con tilde, la <span class="mono">ñ</span> y cualquier otro carácter que aparezca. Los archivos de entrada están codificados en UTF-8.</p>
+<p>Los saltos de línea deben conservarse exactamente como están en el original, sean <span class="mono">\n</span> o <span class="mono">\r\n</span>.</p>
+
+<h3>1.2 Construcción del árbol</h3>
+<p>El árbol se construye a partir de las frecuencias de los caracteres del archivo, extrayendo repetidamente los dos nodos de menor frecuencia y uniéndolos en un nodo nuevo cuya frecuencia es la suma de ambos.</p>
+<p>La cola de prioridad que se use en la construcción debe ser implementada por el grupo. No se permite usar <span class="mono">heapq</span>, <span class="mono">queue.PriorityQueue</span> ni ninguna otra estructura de prioridad de librerías.</p>
+<div class="box">
+  <span class="note-title">Regla de desempate (obligatoria)</span>
+  <p>Para que todos los grupos obtengan el mismo árbol a partir del mismo archivo, la prioridad de cada nodo se compara así:</p>
+  <ol>
+    <li>Primero por frecuencia: tiene prioridad la menor.</li>
+    <li>Si las frecuencias son iguales, por el menor carácter del subárbol, según su código Unicode. En una hoja es su propio carácter; en un nodo interno es el menor carácter entre todas sus hojas.</li>
+  </ol>
+  <p>Al unir dos nodos, el primero extraído queda como hijo izquierdo y el segundo como hijo derecho. El hijo izquierdo agrega un <span class="mono">0</span> al código y el derecho un <span class="mono">1</span>.</p>
+</div>
+
+<h3>1.3 Archivo comprimido</h3>
+<p>El archivo comprimido es un archivo binario. Los bits de los códigos se empaquetan de 8 en 8 en bytes reales. Si el total de bits no es múltiplo de 8, el último byte se completa con bits de relleno, y el archivo debe contener la información necesaria para que el descompresor sepa cuántos bits ignorar.</p>
+<p>El archivo comprimido debe contener todo lo necesario para descomprimir sin acceso al archivo original. Cada grupo diseña el formato de la cabecera, y ese formato debe quedar documentado byte por byte en el README.</p>
+<div class="box ochre">
+  <span class="note-title">No se acepta</span>
+  <ul>
+    <li>Guardar los códigos como texto con caracteres <span class="mono">'0'</span> y <span class="mono">'1'</span>.</li>
+    <li>Guardar el texto original, completo o en parte, dentro del archivo comprimido.</li>
+    <li>Usar librerías de compresión (<span class="mono">zlib</span>, <span class="mono">gzip</span>, <span class="mono">bz2</span>, <span class="mono">lzma</span>, <span class="mono">zipfile</span>) o paquetes que implementen Huffman.</li>
+    <li>Usar <span class="mono">pickle</span> u otra serialización automática de objetos de Python para la cabecera.</li>
+  </ul>
+</div>
+
+<h3>1.4 Descompresión</h3>
+<p>A partir únicamente del archivo comprimido, el programa reconstruye el archivo original. El resultado debe ser idéntico al original byte a byte.</p>
+
+<h3>1.5 Casos borde</h3>
+<p>El programa debe comprimir y descomprimir correctamente, como mínimo, estos casos:</p>
+<ul>
+  <li>Un archivo vacío.</li>
+  <li>Un archivo con un solo carácter distinto repetido muchas veces. En ese caso el árbol tiene una sola hoja, y a ese carácter se le asigna el código <span class="mono">0</span>.</li>
+  <li>Un archivo de un solo carácter.</li>
+</ul>
+
+<h2>2. Comparación antes y después</h2>
+<p>El programa debe generar, para cada archivo procesado, un reporte de comparación con los siguientes datos.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dato</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>Caracteres</td><td>Número de caracteres del archivo original</td></tr>
+    <tr><td>Símbolos distintos</td><td>Tamaño del alfabeto del archivo</td></tr>
+    <tr><td>Tamaño original</td><td>En bytes, tal como ocupa en disco</td></tr>
+    <tr><td>Tamaño comprimido</td><td>En bytes, separado en cabecera y carga útil (los bits de los códigos), además del total</td></tr>
+    <tr><td>Tasa de compresión</td><td>Tamaño comprimido total dividido entre tamaño original</td></tr>
+    <tr><td>Entropía <i>H</i></td><td>En bits por carácter</td></tr>
+    <tr><td>Longitud media <i>L</i></td><td>Bits por carácter que usa la codificación obtenida</td></tr>
+    <tr><td>Verificación</td><td>Si el archivo descomprimido es idéntico al original</td></tr>
+    <tr><td>Tabla de códigos</td><td>Cada carácter con su frecuencia y su código</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Si <i>n</i> es el número de caracteres del archivo y <i>f</i>(<i>c</i>) la frecuencia del carácter <i>c</i>, con <i>p</i>(<i>c</i>) = <i>f</i>(<i>c</i>) / <i>n</i>:</p>
+<p class="formula"><i>H</i> = − Σ <i>p</i>(<i>c</i>) · log<sub>2</sub> <i>p</i>(<i>c</i>) &emsp;&emsp; <i>L</i> = Σ <i>p</i>(<i>c</i>) · |código(<i>c</i>)|</p>
+<p>En la tabla de códigos, los caracteres no visibles se muestran con un nombre legible (por ejemplo, <span class="mono">␣</span> para el espacio y <span class="mono">\n</span> para el salto de línea).</p>
+
+<h3>2.1 Corpus de prueba</h3>
+<p>El docente publicará un corpus común para que los resultados de los grupos sean comparables. Incluye, entre otros:</p>
+<ul>
+  <li>Una obra literaria larga en español.</li>
+  <li>Un archivo de código fuente.</li>
+  <li>Un texto con mucha repetición.</li>
+  <li>Un texto de caracteres aleatorios.</li>
+  <li>Un texto muy corto.</li>
+  <li>Un archivo con un solo carácter distinto repetido.</li>
+</ul>
+
+<h3>2.2 Informe de análisis</h3>
+<p>El grupo entrega un informe con la tabla comparativa de todo el corpus y una discusión, apoyada en sus propios datos, de las siguientes preguntas:</p>
+<ol>
+  <li>¿En qué archivos se obtuvo la mejor y la peor tasa de compresión, y a qué se debe la diferencia?</li>
+  <li>¿Hay archivos en los que el comprimido ocupa más que el original? Explique por qué ocurre.</li>
+  <li>¿Cómo se comparan <i>L</i> y <i>H</i> en cada archivo? ¿Puede <i>L</i> ser menor que <i>H</i>?</li>
+  <li>El tamaño original en bytes no siempre coincide con el número de caracteres. ¿En qué archivos ocurre y por qué?</li>
+</ol>
+
+<h2>3. Interfaz</h2>
+<p>El programa debe permitir, como mínimo, tres operaciones: comprimir un archivo, descomprimir un archivo y generar el reporte de comparación. Una interfaz de consola es suficiente para el curso.</p>
+<div class="box green">
+  <span class="note-title">Feria de proyectos de ingeniería</span>
+  <p>Los grupos que quieran participar en la feria de proyectos deben presentar su proyecto con interfaz gráfica, sin excepción. La interfaz gráfica debe permitir las tres operaciones y mostrar el reporte de comparación.</p>
+</div>
+
+<h2>4. Ejemplo trabajado</h2>
+<p>Considere un archivo cuyo contenido completo es el texto <span class="mono">papá apaña</span> (10 caracteres, sin salto de línea al final).</p>
+
+<h3>Paso 1. Frecuencias</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Carácter</th><th>Código Unicode</th><th class="num">Frecuencia</th></tr></thead>
+  <tbody>
+    <tr><td><span class="mono">␣</span> (espacio)</td><td>U+0020</td><td class="num">1</td></tr>
+    <tr><td><span class="mono">a</span></td><td>U+0061</td><td class="num">4</td></tr>
+    <tr><td><span class="mono">p</span></td><td>U+0070</td><td class="num">3</td></tr>
+    <tr><td><span class="mono">á</span></td><td>U+00E1</td><td class="num">1</td></tr>
+    <tr><td><span class="mono">ñ</span></td><td>U+00F1</td><td class="num">1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Paso 2. Construcción del árbol</h3>
+<p>Cada nodo se describe con su par (frecuencia, menor carácter del subárbol). En cada paso se extraen los dos nodos de mayor prioridad según la regla de desempate.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Paso</th><th>Primero extraído (izquierdo)</th><th>Segundo extraído (derecho)</th><th>Nodo nuevo</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>hoja <span class="mono">␣</span> (1, ␣)</td><td>hoja <span class="mono">á</span> (1, á)</td><td>(2, ␣)</td></tr>
+    <tr><td>2</td><td>hoja <span class="mono">ñ</span> (1, ñ)</td><td>nodo (2, ␣)</td><td>(3, ␣)</td></tr>
+    <tr><td>3</td><td>nodo (3, ␣)</td><td>hoja <span class="mono">p</span> (3, p)</td><td>(6, ␣)</td></tr>
+    <tr><td>4</td><td>hoja <span class="mono">a</span> (4, a)</td><td>nodo (6, ␣)</td><td>(10, ␣) raíz</td></tr>
+  </tbody>
+</table>
+</div>
+<p>En el paso 1 hay tres nodos con frecuencia 1, y se extraen <span class="mono">␣</span> y <span class="mono">á</span> porque U+0020 &lt; U+00E1 &lt; U+00F1. En el paso 3 los dos nodos tienen frecuencia 3, y el nodo interno sale primero porque su menor carácter, el espacio, es menor que <span class="mono">p</span>.</p>
+
+<figure>
+<svg viewBox="0 0 560 380" role="img" aria-label="Árbol de Huffman del texto papá apaña">
+  <g class="svg-edge">
+    <line x1="280" y1="40" x2="150" y2="112"/>
+    <line x1="280" y1="40" x2="400" y2="112"/>
+    <line x1="400" y1="112" x2="320" y2="190"/>
+    <line x1="400" y1="112" x2="480" y2="190"/>
+    <line x1="320" y1="190" x2="240" y2="268"/>
+    <line x1="320" y1="190" x2="400" y2="268"/>
+    <line x1="400" y1="268" x2="340" y2="342"/>
+    <line x1="400" y1="268" x2="460" y2="342"/>
+  </g>
+  <g font-size="15" class="svg-b" text-anchor="middle">
+    <text x="205" y="68">0</text><text x="352" y="68">1</text>
+    <text x="350" y="146">0</text><text x="450" y="146">1</text>
+    <text x="270" y="224">0</text><text x="372" y="224">1</text>
+    <text x="358" y="300">0</text><text x="442" y="300">1</text>
+  </g>
+  <circle class="svg-int" cx="280" cy="40" r="22"/><text class="svg-t" x="280" y="46" font-size="16" text-anchor="middle" font-weight="700">10</text>
+  <circle class="svg-int" cx="400" cy="112" r="22"/><text class="svg-t" x="400" y="118" font-size="16" text-anchor="middle" font-weight="700">6</text>
+  <circle class="svg-int" cx="320" cy="190" r="22"/><text class="svg-t" x="320" y="196" font-size="16" text-anchor="middle" font-weight="700">3</text>
+  <circle class="svg-int" cx="400" cy="268" r="22"/><text class="svg-t" x="400" y="274" font-size="16" text-anchor="middle" font-weight="700">2</text>
+
+  <rect class="svg-leaf" x="122" y="92" width="56" height="44" rx="6"/>
+  <text class="svg-t" x="150" y="112" font-size="17" text-anchor="middle" font-weight="700">a</text>
+  <text class="svg-t" x="150" y="129" font-size="12" text-anchor="middle">4</text>
+  <text class="svg-c" x="150" y="154" font-size="13" text-anchor="middle">0</text>
+
+  <rect class="svg-leaf" x="452" y="170" width="56" height="44" rx="6"/>
+  <text class="svg-t" x="480" y="190" font-size="17" text-anchor="middle" font-weight="700">p</text>
+  <text class="svg-t" x="480" y="207" font-size="12" text-anchor="middle">3</text>
+  <text class="svg-c" x="480" y="232" font-size="13" text-anchor="middle">11</text>
+
+  <rect class="svg-leaf" x="212" y="248" width="56" height="44" rx="6"/>
+  <text class="svg-t" x="240" y="268" font-size="17" text-anchor="middle" font-weight="700">ñ</text>
+  <text class="svg-t" x="240" y="285" font-size="12" text-anchor="middle">1</text>
+  <text class="svg-c" x="240" y="310" font-size="13" text-anchor="middle">100</text>
+
+  <rect class="svg-leaf" x="312" y="322" width="56" height="44" rx="6"/>
+  <text class="svg-t" x="340" y="342" font-size="17" text-anchor="middle" font-weight="700">␣</text>
+  <text class="svg-t" x="340" y="359" font-size="12" text-anchor="middle">1</text>
+
+  <rect class="svg-leaf" x="432" y="322" width="56" height="44" rx="6"/>
+  <text class="svg-t" x="460" y="342" font-size="17" text-anchor="middle" font-weight="700">á</text>
+  <text class="svg-t" x="460" y="359" font-size="12" text-anchor="middle">1</text>
+</svg>
+<figcaption>Árbol resultante. Nodos internos en círculo con su frecuencia; hojas en rectángulo con carácter y frecuencia.</figcaption>
+</figure>
+
+<h3>Paso 3. Tabla de códigos</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Carácter</th><th class="num">Frecuencia</th><th>Código</th><th class="num">Bits aportados</th></tr></thead>
+  <tbody>
+    <tr><td><span class="mono">a</span></td><td class="num">4</td><td class="mono">0</td><td class="num">4</td></tr>
+    <tr><td><span class="mono">p</span></td><td class="num">3</td><td class="mono">11</td><td class="num">6</td></tr>
+    <tr><td><span class="mono">ñ</span></td><td class="num">1</td><td class="mono">100</td><td class="num">3</td></tr>
+    <tr><td><span class="mono">␣</span></td><td class="num">1</td><td class="mono">1010</td><td class="num">4</td></tr>
+    <tr><td><span class="mono">á</span></td><td class="num">1</td><td class="mono">1011</td><td class="num">4</td></tr>
+    <tr><th colspan="3">Total</th><th class="num">21</th></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Paso 4. Codificación y empaquetado</h3>
+<p>Al reemplazar cada carácter por su código se obtienen 21 bits:</p>
+<div class="stream">p   a p   á    ␣    a p   a ñ   a
+11  0 11  1011 1010 0 11  0 100 0</div>
+<p>Agrupados en bytes, faltan 3 bits para completar el tercero, que se rellenan (subrayados):</p>
+<div class="stream"><span class="c0">11011101</span>  <span class="c1">11010011</span>  <span class="c0">01000</span><span class="pad">000</span>
+   0xDD      0xD3      0x40</div>
+
+<h3>Salida esperada del reporte (sin cabecera)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dato</th><th>Valor</th></tr></thead>
+  <tbody>
+    <tr><td>Caracteres</td><td>10</td></tr>
+    <tr><td>Símbolos distintos</td><td>5</td></tr>
+    <tr><td>Tamaño original</td><td>12 bytes (<span class="mono">á</span> y <span class="mono">ñ</span> ocupan 2 bytes cada uno en UTF-8)</td></tr>
+    <tr><td>Carga útil</td><td>3 bytes (21 bits de código y 3 de relleno)</td></tr>
+    <tr><td>Entropía <i>H</i></td><td>2.0464 bits por carácter</td></tr>
+    <tr><td>Longitud media <i>L</i></td><td>21 / 10 = 2.1000 bits por carácter</td></tr>
+  </tbody>
+</table>
+</div>
+<p>El tamaño de la cabecera, y por tanto el tamaño comprimido total y la tasa de compresión, dependen del formato que diseñe cada grupo.</p>
+
+<h2>5. Entregables</h2>
+<ul>
+  <li>Código fuente completo del programa.</li>
+  <li>README con las instrucciones para ejecutar el programa y la especificación byte por byte del formato del archivo comprimido.</li>
+  <li>Informe de análisis en PDF con la tabla comparativa del corpus y la discusión de la sección 2.2.</li>
+</ul>
+<p>La entrega se realiza el martes 3 de noviembre de 2026, antes de la sustentación.</p>
+
+<h2>6. Sustentación</h2>
+<p>La sustentación es práctica y se hace con el programa en ejecución. Durante la sustentación:</p>
+<ul>
+  <li>El grupo comprime y descomprime archivos nuevos que entrega el docente en ese momento, y verifica que el resultado sea idéntico al original.</li>
+  <li>El docente puede pedir modificaciones pequeñas al código, que deben hacerse en vivo.</li>
+  <li>Cualquier integrante puede ser llamado a explicar o modificar cualquier parte del proyecto, incluido el formato del archivo comprimido y los resultados del informe.</li>
+</ul>
+<p>La calificación de la sustentación es individual. Un programa que no reconstruye el original de forma idéntica no se considera un compresor funcional.</p>
+
+</main>
+</body>
+</html>
