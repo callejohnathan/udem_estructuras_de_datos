@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Avanzado de Árboles</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @keyframes pulse-ring { 
+            0% { transform: scale(1); opacity: 0.6; } 
+            100% { transform: scale(1.6); opacity: 0; } 
+        }
+        .pulse-node { 
+            transform-origin: center; 
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; 
+        }
+        
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        // -- ICONOS SVG (Simulando Lucide/Heroicons) --
+        const IconPlay = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+        const IconPause = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
+        const IconSkipBack = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>;
+        const IconSkipForward = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>;
+        const IconRefresh = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
+        const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+        const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+
+        const QUIZ_QUESTIONS = [
+            { q: "¿Qué afirmación empareja correctamente los conceptos de la anatomía básica de un árbol?", options: ["El nodo interno no tiene hijos, mientras que la hoja sí.", "El nodo interno tiene hijos, mientras que la hoja no.", "La raíz siempre tiene al menos dos hijos.", "Las hojas son siempre los nodos con los valores más grandes."], answer: 1, explanation: "Por definición, un nodo interno es aquel que tiene al menos un hijo. Una hoja (leaf) es un nodo terminal, es decir, sin hijos." },
+            { q: "Durante un recorrido en Postorden, la ejecución llega a una hoja y termina de procesarla. ¿Qué ocurre inmediatamente después con el Call Stack?", options: ["Se crea un nuevo marco para la hoja.", "Se desapila el marco actual y se retorna al padre.", "El Call Stack se vacía por completo.", "El puntero current se mueve a la raíz."], answer: 1, explanation: "Cuando una función recursiva termina su ejecución (como al procesar una hoja sin más hijos), hace un 'return'. Esto provoca que su marco de pila (stack frame) sea destruido (desapilado) y el control vuelva a la función que la llamó (el padre)." },
+            { q: "Buscamos el valor 42 en un BST. La raíz es 50, su hijo izquierdo es 30, y el derecho de 30 es 40. Si el `current` está en 40, ¿cuál es el siguiente paso lógico?", options: ["Se mueve hacia el hijo izquierdo del nodo 40.", "Se mueve hacia el hijo derecho del nodo 40.", "Se detiene la búsqueda, el valor no existe.", "Vuelve a la raíz 50 para reevaluar."], answer: 1, explanation: "Como el valor buscado (42) es mayor que el nodo actual (40), las reglas del Árbol Binario de Búsqueda dictan que debemos descartar la rama izquierda e ir hacia el hijo derecho." },
+            { q: "¿Qué recorrido de un BST produce como resultado la visita de todos sus nodos ordenados de menor a mayor?", options: ["Preorden", "Postorden", "Inorden", "Búsqueda por Niveles"], answer: 2, explanation: "El Inorden (Izquierda -> Raíz -> Derecha) en un BST siempre procesa primero los menores (izquierda), luego el actual, y luego los mayores (derecha), resultando en un orden ascendente perfecto." },
+            { q: "¿A qué métrica del árbol es directamente proporcional el tamaño máximo que alcanza el Call Stack durante un recorrido de profundidad (DFS)?", options: ["A la cantidad total de nodos.", "A la cantidad de nodos hoja.", "A la profundidad máxima (altura) del árbol.", "Al número de nodos internos."], answer: 2, explanation: "En un recorrido DFS (como Pre/In/Postorden), la recursividad profundiza en una rama hasta llegar a una hoja antes de devolverse. Por ende, la cantidad máxima de funciones apiladas simultáneamente es igual a la altura del árbol." },
+            { q: "En el pseudocódigo, ¿cuál es el propósito de pasar una referencia como `current` en cada llamada recursiva?", options: ["Evitar que el árbol sea borrado.", "Mantener el contexto local sobre qué nodo está evaluando esa llamada en particular.", "Acelerar el tiempo de ejecución a O(1).", "Modificar el valor de la raíz constantemente."], answer: 1, explanation: "Cada 'frame' en el Call Stack necesita saber con qué nodo está trabajando. El parámetro `current` es una variable local en esa ejecución que actúa como puntero al nodo específico." },
+            { q: "Respecto al pseudocódigo en Preorden, ¿en qué difiere principalmente la implementación de un Árbol General frente a la de un Árbol Binario?", options: ["El General usa un bucle para iterar una lista de hijos; el Binario hace dos llamadas fijas (izq y der).", "El Binario no usa recursividad.", "El General siempre procesa los nodos de derecha a izquierda.", "No difieren en absoluto."], answer: 0, explanation: "Un árbol binario tiene atributos fijos `izquierdo` y `derecho`. Un árbol general tiene un arreglo/lista `hijos`, por lo que se requiere un ciclo (for) para llamar a la recursividad por cada hijo." },
+            { q: "Si A es el padre directo de B, y B es el padre directo de C. ¿Qué relación estructural tiene el nodo A con el nodo C?", options: ["A es hermano de C.", "A es un descendiente de C.", "A es un ancestro de C.", "No tienen relación estructural."], answer: 2, explanation: "El ancestro es cualquier nodo en el camino desde el nodo actual (C) hacia la raíz. Como A está por encima de C en su misma línea, A es ancestro de C (y C es descendiente de A)." },
+            { q: "¿Por qué el recorrido en Postorden es la elección predilecta cuando necesitamos eliminar un árbol completo (liberar memoria)?", options: ["Porque es el más rápido algorítmicamente.", "Porque procesa a los hijos antes de procesar a su padre.", "Porque borra siempre la raíz de primero.", "Porque evita usar el Call Stack."], answer: 1, explanation: "Si eliminas a un padre primero, pierdes las referencias (punteros) a sus hijos, dejando memoria inaccesible. Postorden asegura que visitas y eliminas primero a todos los hijos antes de eliminar al padre." },
+            { q: "Tenemos un BST con raíz 50 e hijo izquierdo 30. Queremos insertar el valor 35. ¿Dónde quedará enlazado?", options: ["Como hijo izquierdo de 30.", "Como hijo derecho de 30.", "Como hijo derecho de 50.", "Sustituirá al nodo 30."], answer: 1, explanation: "Al insertar 35: 35 < 50 (va izq a 30). 35 > 30 (va der de 30). Queda como hijo derecho de 30." },
+            { q: "¿Cuál es la principal razón algorítmica por la que la búsqueda en un Árbol Binario de Búsqueda (BST) balanceado tiene una complejidad de O(log n)?", options: ["Porque usa recursividad.", "Porque descarta la mitad del espacio de búsqueda en cada paso.", "Porque los datos son números enteros pequeños.", "Porque el Call Stack no se llena."], answer: 1, explanation: "La propiedad clave O(log n) ocurre porque en cada comparación el algoritmo sabe con certeza que el valor buscado no está en la otra mitad del árbol, reduciendo el problema a la mitad iterativamente." },
+            { q: "Durante la ejecución del pseudocódigo recursivo, se cumple la condición `if (curr === null) return;`. ¿Qué ocurre con la memoria en ese instante?", options: ["Se crea la raíz del árbol.", "El marco superior se destruye y el control retrocede (Unwinding).", "Se borra todo el árbol de la memoria RAM.", "El programa entra en un bucle infinito."], answer: 1, explanation: "Esa condición es el 'Caso Base'. Cuando se cumple, la función detiene su ejecución y retorna, lo que significa que el marco de memoria en el Call Stack se libera (destruye) y volvemos al estado anterior." },
+            { q: "Un árbol binario sesgado a la izquierda (solo hijos izquierdos) tiene 4 nodos. Sabiendo que la raíz está en Nivel 0, ¿cuál es su profundidad máxima?", options: ["Profundidad dos", "Profundidad tres", "Profundidad cuatro", "Profundidad O(n)"], answer: 1, explanation: "Los niveles serían: Nivel 0 (raíz), Nivel 1 (2do nodo), Nivel 2 (3er nodo), Nivel 3 (4to nodo). La profundidad máxima es 3." },
+            { q: "Se tiene un árbol binario donde la Raíz es 1, hijo izquierdo es 2 y derecho es 3. Siguiendo el algoritmo Inorden, ¿qué nodo se imprime de primero?", options: ["El nodo 1", "El nodo 2", "El nodo 3", "Depende del Call Stack"], answer: 1, explanation: "Inorden visita: Izquierda, Raíz, Derecha. Por lo tanto, va todo a la izquierda que pueda. Imprime el 2, luego la raíz 1, luego el derecho 3." },
+            { q: "¿Por qué es obligatorio utilizar búsqueda lineal O(n) en un Árbol Binario normal, renunciando a la búsqueda binaria?", options: ["Porque los árboles binarios no aceptan números grandes.", "Porque no existe orden numérico predecible garantizado.", "Porque JavaScript no soporta búsquedas logarítmicas.", "Porque la búsqueda lineal es siempre más rápida."], answer: 1, explanation: "Un árbol binario normal restringe la forma (máximo 2 hijos) pero no el contenido. Al no estar ordenados, no puedes descartar ramas, obligándote a revisar cada nodo uno por uno (búsqueda exhaustiva)." }
+        ];
+
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 500;
+        const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+
+        // Asignación estricta de posiciones para evitar nodos flotantes
+        const recalculatePositions = (node, treeType, left = 20, right = CANVAS_WIDTH - 20, y = 50, level = 0) => {
+            if (!node) return null;
+            node.x = (left + right) / 2;
+            node.y = y;
+            node.level = level;
+            
+            const verticalSpacing = 75;
+
+            if (treeType === 'general' && node.children) {
+                if (node.children.length > 0) {
+                    const slice = (right - left) / node.children.length;
+                    node.children.forEach((child, i) => {
+                        recalculatePositions(child, treeType, left + i * slice, left + (i + 1) * slice, y + verticalSpacing, level + 1);
+                    });
+                }
+            } else {
+                if (node.left) recalculatePositions(node.left, treeType, left, node.x, y + verticalSpacing, level + 1);
+                if (node.right) recalculatePositions(node.right, treeType, node.x, right, y + verticalSpacing, level + 1);
+            }
+            return node;
+        };
+
+        const checkDuplicate = (root, val, type) => {
+            if (!root) return false;
+            if (root.id === val) return true;
+            if (type === 'general') {
+                return (root.children || []).some(c => checkDuplicate(c, val, type));
+            }
+            return checkDuplicate(root.left, val, type) || checkDuplicate(root.right, val, type);
+        };
+
+        const insertNode = (root, val, type) => {
+            if (!root) return type === 'general' ? { id: val, children: [] } : { id: val, left: null, right: null };
+            
+            const newRoot = deepClone(root);
+            
+            if (type === 'bst') {
+                const insertBST = (node, v) => {
+                    if (v < node.id) {
+                        if (!node.left) node.left = { id: v, left: null, right: null };
+                        else insertBST(node.left, v);
+                    } else if (v > node.id) {
+                        if (!node.right) node.right = { id: v, left: null, right: null };
+                        else insertBST(node.right, v);
+                    }
+                };
+                insertBST(newRoot, val);
+            } else if (type === 'binary') {
+                const q = [newRoot];
+                while (q.length > 0) {
+                    const curr = q.shift();
+                    if (!curr.left) { curr.left = { id: val, left: null, right: null }; break; }
+                    else q.push(curr.left);
+                    if (!curr.right) { curr.right = { id: val, left: null, right: null }; break; }
+                    else q.push(curr.right);
+                }
+            } else if (type === 'general') {
+                const q = [newRoot];
+                while (q.length > 0) {
+                    const curr = q.shift();
+                    if (!curr.children) curr.children = [];
+                    // Limit visual to 3 children so it fits on screen nicely
+                    if (curr.children.length < 3) {
+                        curr.children.push({ id: val, children: [] });
+                        break;
+                    } else {
+                        curr.children.forEach(c => q.push(c));
+                    }
+                }
+            }
+            return newRoot;
+        };
+
+        const buildDefaultTree = (type) => {
+            let r = null;
+            // Árboles predeterminados de ~4-5 niveles
+            const values = {
+                bst: [50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43, 56, 68, 81, 93],
+                binary: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                general: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+            };
+            values[type].forEach(v => { r = insertNode(r, v, type); });
+            return recalculatePositions(r, type);
+        };
+
+        const extractNodesAndEdges = (root, type) => {
+            const nodes = [];
+            const edges = [];
+            const traverse = (node, parent) => {
+                if (!node) return;
+                nodes.push(node);
+                if (parent) edges.push({ from: parent, to: node });
+                
+                if (type === 'general' && node.children) {
+                    node.children.forEach(c => { c.parent = node.id; traverse(c, node); });
+                } else {
+                    if (node.left) { node.left.parent = node.id; traverse(node.left, node); }
+                    if (node.right) { node.right.parent = node.id; traverse(node.right, node); }
+                }
+            };
+            traverse(root, null);
+            return { nodes, edges };
+        };
+
+        const generateTraversalSteps = (type, root, treeType) => {
+            const steps = [];
+            const stack = [];
+            const visited = [];
+
+            const traverse = (node, funcName) => {
+                const nodeIdStr = node ? node.id : 'null';
+                const currentStackFrame = `${funcName}(${nodeIdStr})`;
+                stack.push(currentStackFrame);
+                steps.push({ current: node ? node.id : null, stack: [...stack], visited: [...visited], line: 1, desc: `Llamada a ${funcName}(${nodeIdStr}). Entramos a la función y apilamos.` });
+
+                if (!node) {
+                    steps.push({ current: null, stack: [...stack], visited: [...visited], line: 2, desc: `Caso Base: El nodo es nulo. Hacemos RETURN (Desapilamos y regresamos).` });
+                    stack.pop();
+                    return;
+                }
+
+                if (type === 'pre') {
+                    visited.push(node.id);
+                    steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 3, desc: `Visitamos: ${node.id}. (Procesamos el nodo actual)` });
+                    if (treeType === 'general') {
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 4, desc: `Iterando sobre los hijos de ${node.id}...` });
+                        (node.children || []).forEach(c => {
+                            steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 5, desc: `Llamada recursiva a hijo: ${c.id}` });
+                            traverse(c, funcName);
+                        });
+                    } else {
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 4, desc: `Llamada Izquierda de ${node.id}.` }); traverse(node.left, funcName);
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 5, desc: `Llamada Derecha de ${node.id}.` }); traverse(node.right, funcName);
+                    }
+                } else if (type === 'in') {
+                    if (treeType !== 'general') {
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 3, desc: `Llamada Izquierda de ${node.id}.` }); traverse(node.left, funcName);
+                        visited.push(node.id);
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 4, desc: `Visitamos: ${node.id}. (Procesamos el nodo actual)` });
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 5, desc: `Llamada Derecha de ${node.id}.` }); traverse(node.right, funcName);
+                    }
+                } else if (type === 'post') {
+                    if (treeType === 'general') {
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 3, desc: `Iterando sobre los hijos de ${node.id}...` });
+                        (node.children || []).forEach(c => {
+                            steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 4, desc: `Llamada recursiva a hijo: ${c.id}` });
+                            traverse(c, funcName);
+                        });
+                    } else {
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 3, desc: `Llamada Izquierda de ${node.id}.` }); traverse(node.left, funcName);
+                        steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: 4, desc: `Llamada Derecha de ${node.id}.` }); traverse(node.right, funcName);
+                    }
+                    visited.push(node.id);
+                    steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: treeType === 'general' ? 5 : 5, desc: `Visitamos: ${node.id}. (Procesamos el nodo actual)` });
+                }
+
+                steps.push({ current: node.id, stack: [...stack], visited: [...visited], line: treeType === 'general' && type !== 'post' ? 6 : 6, desc: `Fin de la función para ${node.id}. Retornamos (Unwinding).` });
+                stack.pop();
+            };
+
+            const nameMap = { pre: 'preorden', in: 'inorden', post: 'postorden' };
+            traverse(root, nameMap[type]);
+            steps.push({ current: null, stack: [], visited: [...visited], line: 0, desc: `Recorrido completado con éxito.` });
+            return steps;
+        };
+
+        const getSubtreeIds = (node, type) => {
+            if (!node) return [];
+            let ids = [node.id];
+            if (type === 'general') {
+                (node.children || []).forEach(c => ids.push(...getSubtreeIds(c, type)));
+            } else {
+                ids.push(...getSubtreeIds(node.left, type));
+                ids.push(...getSubtreeIds(node.right, type));
+            }
+            return ids;
+        };
+
+        const generateSearchSteps = (root, targetVal, treeType) => {
+            const steps = [];
+            
+            if (treeType === 'bst') {
+                let discarded = [];
+                let curr = root;
+
+                while (curr !== null) {
+                    steps.push({ current: curr.id, discarded: [...discarded], checked: [], desc: `Analizando nodo actual: ${curr.id}. ¿Es igual a ${targetVal}?`, found: false, algo: 'binary' });
+                    
+                    if (curr.id === targetVal) {
+                        steps.push({ current: curr.id, discarded: [...discarded], checked: [], desc: `¡Encontrado! ${targetVal} == ${curr.id}. Complejidad logarítmica demostrada.`, found: true, algo: 'binary' });
+                        break;
+                    }
+                    
+                    if (targetVal < curr.id) {
+                        if (curr.right) discarded = [...discarded, ...getSubtreeIds(curr.right, 'bst')];
+                        steps.push({ current: curr.id, discarded: [...discarded], checked: [], desc: `${targetVal} es MENOR que ${curr.id}. Descartamos la rama derecha O(n/2) y vamos a la izquierda.`, found: false, algo: 'binary' });
+                        curr = curr.left;
+                    } else {
+                        if (curr.left) discarded = [...discarded, ...getSubtreeIds(curr.left, 'bst')];
+                        steps.push({ current: curr.id, discarded: [...discarded], checked: [], desc: `${targetVal} es MAYOR que ${curr.id}. Descartamos la rama izquierda O(n/2) y vamos a la derecha.`, found: false, algo: 'binary' });
+                        curr = curr.right;
+                    }
+                }
+                
+                if (!curr) steps.push({ current: null, discarded: [...discarded], checked: [], desc: `Llegamos a null (final de la rama). El valor ${targetVal} no existe.`, found: false, algo: 'binary' });
+            } else {
+                // Linear Search (BFS)
+                const queue = [root];
+                const checked = [];
+                let found = false;
+                
+                while (queue.length > 0) {
+                    const curr = queue.shift();
+                    if (!curr) continue;
+                    
+                    steps.push({ current: curr.id, discarded: [], checked: [...checked], desc: `Búsqueda Lineal: Chequeando nodo ${curr.id}... ¿Es ${targetVal}?`, found: false, algo: 'linear' });
+                    
+                    if (curr.id === targetVal) {
+                        steps.push({ current: curr.id, discarded: [], checked: [...checked], desc: `¡Encontrado! ${targetVal} == ${curr.id}. Tuvimos que revisar ${checked.length + 1} nodos.`, found: true, algo: 'linear' });
+                        found = true;
+                        break;
+                    }
+                    
+                    checked.push(curr.id);
+                    steps.push({ current: curr.id, discarded: [], checked: [...checked], desc: `No es ${targetVal}. Marcamos como revisado y encolamos hijos.`, found: false, algo: 'linear' });
+
+                    if (treeType === 'general') {
+                        if (curr.children) curr.children.forEach(c => queue.push(c));
+                    } else {
+                        if (curr.left) queue.push(curr.left);
+                        if (curr.right) queue.push(curr.right);
+                    }
+                }
+                
+                if (!found) steps.push({ current: null, discarded: [], checked: [...checked], desc: `Recorrimos TODO el árbol O(n). El valor ${targetVal} no existe.`, found: false, algo: 'linear' });
+            }
+            return steps;
+        };
+
+        const getPseudocode = (simType, treeType) => {
+            if (treeType === 'general') {
+                if (simType === 'pre') return ["function preorden(curr) {", "  if (curr === null) return;", "  visitar(curr);", "  for (let hijo of curr.hijos) {", "    preorden(hijo);", "  }", "}"];
+                if (simType === 'post') return ["function postorden(curr) {", "  if (curr === null) return;", "  for (let hijo of curr.hijos) {", "    postorden(hijo);", "  }", "  visitar(curr);", "}"];
+            } else {
+                if (simType === 'pre') return ["function preorden(curr) {", "  if (curr === null) return;", "  visitar(curr);", "  preorden(curr.izquierdo);", "  preorden(curr.derecho);", "}"];
+                if (simType === 'in') return ["function inorden(curr) {", "  if (curr === null) return;", "  inorden(curr.izquierdo);", "  visitar(curr);", "  inorden(curr.derecho);", "}"];
+                if (simType === 'post') return ["function postorden(curr) {", "  if (curr === null) return;", "  postorden(curr.izquierdo);", "  postorden(curr.derecho);", "  visitar(curr);", "}"];
+            }
+            return [];
+        };
+
+        const App = () => {
+            const { useState, useEffect } = React;
+            
+            // Tab and Tree State
+            const [activeTab, setActiveTab] = useState('conceptos'); // conceptos, recorridos, busqueda, quiz
+            const [treeType, setTreeType] = useState('bst'); // general, binary, bst
+            const [treeRoot, setTreeRoot] = useState(() => buildDefaultTree('bst'));
+            const [inputValue, setInputValue] = useState('');
+            const [insertError, setInsertError] = useState('');
+            
+            // Interaction State
+            const [activeConcept, setActiveConcept] = useState('');
+            const [selectedNodeId, setSelectedNodeId] = useState(null);
+            
+            // Simulation State
+            const [simType, setSimType] = useState('pre');
+            const [simSteps, setSimSteps] = useState([]);
+            const [currentStepIndex, setCurrentStepIndex] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [searchValue, setSearchValue] = useState('');
+            const [searchSteps, setSearchSteps] = useState([]);
+
+            // Quiz State
+            const [quizStarted, setQuizStarted] = useState(false);
+            const [currentQIndex, setCurrentQIndex] = useState(0);
+            const [score, setScore] = useState(0);
+            const [quizCompleted, setQuizCompleted] = useState(false);
+            const [selectedAnswer, setSelectedAnswer] = useState(null);
+            const [showExplanation, setShowExplanation] = useState(false);
+
+            const { nodes: allNodesList, edges: allEdgesList } = extractNodesAndEdges(treeRoot, treeType);
+
+            // Playback effect
+            useEffect(() => {
+                let timer;
+                const activeSteps = activeTab === 'busqueda' ? searchSteps : simSteps;
+                if (isPlaying && currentStepIndex < activeSteps.length - 1) {
+                    timer = setTimeout(() => setCurrentStepIndex(prev => prev + 1), 1200);
+                } else if (currentStepIndex >= activeSteps.length - 1) {
+                    setIsPlaying(false);
+                }
+                return () => clearTimeout(timer);
+            }, [isPlaying, currentStepIndex, simSteps, searchSteps, activeTab]);
+
+            // Tree change reset effect
+            useEffect(() => {
+                setTreeRoot(buildDefaultTree(treeType));
+                setActiveConcept(''); setSelectedNodeId(null);
+                setSimSteps([]); setSearchSteps([]);
+                setCurrentStepIndex(0); setIsPlaying(false);
+                if (treeType === 'general' && simType === 'in') setSimType('pre');
+            }, [treeType]);
+
+            const handleInsert = (e) => {
+                e.preventDefault();
+                const val = parseInt(inputValue);
+                if (isNaN(val)) return;
+
+                if (checkDuplicate(treeRoot, val, treeType)) {
+                    setInsertError(`El nodo ${val} ya existe en el árbol.`);
+                    setTimeout(() => setInsertError(''), 3000);
+                    return;
+                }
+
+                const newRoot = insertNode(treeRoot, val, treeType);
+                setTreeRoot(recalculatePositions(newRoot, treeType));
+                setInputValue(''); setInsertError('');
+                setSimSteps([]); setSearchSteps([]); setIsPlaying(false);
+            };
+
+            const startTraversal = () => {
+                setSimSteps(generateTraversalSteps(simType, treeRoot, treeType));
+                setCurrentStepIndex(0); setIsPlaying(true);
+            };
+
+            const startSearch = (e) => {
+                e.preventDefault();
+                const val = parseInt(searchValue);
+                if (isNaN(val)) return;
+                setSearchSteps(generateSearchSteps(treeRoot, val, treeType));
+                setCurrentStepIndex(0); setIsPlaying(true);
+            };
+
+            // Quiz handlers
+            const handleAnswerSelect = (index) => {
+                if (showExplanation) return;
+                setSelectedAnswer(index);
+                setShowExplanation(true);
+                if (index === QUIZ_QUESTIONS[currentQIndex].answer) {
+                    setScore(prev => prev + 1);
+                }
+            };
+
+            const nextQuestion = () => {
+                if (currentQIndex < QUIZ_QUESTIONS.length - 1) {
+                    setCurrentQIndex(prev => prev + 1);
+                    setSelectedAnswer(null);
+                    setShowExplanation(false);
+                } else {
+                    setQuizCompleted(true);
+                }
+            };
+
+            const resetQuiz = () => {
+                setQuizStarted(false); setQuizCompleted(false);
+                setCurrentQIndex(0); setScore(0);
+                setSelectedAnswer(null); setShowExplanation(false);
+            };
+
+            const currentStep = activeTab === 'recorridos' ? (simSteps[currentStepIndex] || null) 
+                            : activeTab === 'busqueda' ? (searchSteps[currentStepIndex] || null) : null;
+
+            const isNodeHighlighted = (node) => {
+                if (activeTab === 'recorridos' && currentStep) {
+                    if (currentStep.current === node.id) return 'current';
+                    if (currentStep.visited?.includes(node.id)) return 'visited';
+                    return 'default';
+                }
+                if (activeTab === 'busqueda' && currentStep) {
+                    if (currentStep.current === node.id) return currentStep.found ? 'found' : 'current';
+                    if (currentStep.discarded?.includes(node.id)) return 'discarded';
+                    if (currentStep.checked?.includes(node.id)) return 'checked';
+                    return 'default';
+                }
+                if (activeTab === 'conceptos') {
+                    switch (activeConcept) {
+                        case 'raiz': return node.level === 0 ? 'highlight' : 'default';
+                        case 'hoja': 
+                            const isLeaf = treeType === 'general' ? (!node.children || node.children.length === 0) : (!node.left && !node.right);
+                            return isLeaf ? 'highlight' : 'default';
+                        case 'interno': 
+                            const hasChild = treeType === 'general' ? (node.children && node.children.length > 0) : (node.left || node.right);
+                            return (hasChild && node.level !== 0) ? 'highlight' : 'default';
+                        case 'profundidad': return `level-${node.level % 4}`;
+                        case 'asc_desc':
+                            if (!selectedNodeId) return 'default';
+                            if (node.id === selectedNodeId) return 'selected';
+                            
+                            let isDescendant = false;
+                            const checkDesc = (n) => {
+                                if (!n) return;
+                                if (n.id === selectedNodeId) { isDescendant = true; return; }
+                                checkDesc(n.parent ? allNodesList.find(p => p.id === n.parent) : null);
+                            };
+                            checkDesc(node);
+                            if (isDescendant) return 'descendant';
+
+                            let isAncestor = false;
+                            const checkAsc = (n) => {
+                                if (!n) return;
+                                if (n.id === node.id) { isAncestor = true; return; }
+                                checkAsc(n.parent ? allNodesList.find(p => p.id === n.parent) : null);
+                            };
+                            const selectedNodeObj = allNodesList.find(n => n.id === selectedNodeId);
+                            checkAsc(selectedNodeObj);
+                            if (isAncestor) return 'ancestor';
+                            return 'dimmed';
+                        default: return 'default';
+                    }
+                }
+                return 'default';
+            };
+
+            const getNodeColor = (status) => {
+                const map = {
+                    'default': 'fill-white stroke-slate-500',
+                    'highlight': 'fill-amber-300 stroke-amber-600 shadow-lg',
+                    'current': 'fill-blue-400 stroke-blue-700 pulse-animation',
+                    'visited': 'fill-emerald-300 stroke-emerald-600',
+                    'found': 'fill-yellow-300 stroke-yellow-600',
+                    'discarded': 'fill-slate-100 stroke-slate-200 text-slate-300 opacity-40',
+                    'checked': 'fill-slate-300 stroke-slate-500 opacity-70',
+                    'level-0': 'fill-purple-200 stroke-purple-500', 'level-1': 'fill-indigo-200 stroke-indigo-500',
+                    'level-2': 'fill-cyan-200 stroke-cyan-500', 'level-3': 'fill-teal-200 stroke-teal-500',
+                    'selected': 'fill-rose-400 stroke-rose-700', 'ancestor': 'fill-fuchsia-300 stroke-fuchsia-600',
+                    'descendant': 'fill-orange-300 stroke-orange-600', 'dimmed': 'fill-slate-100 stroke-slate-200'
+                };
+                return map[status] || map['default'];
+            };
+
+            return (
+                <div className="flex flex-col w-full h-full">
+                    {/* Header */}
+                    <header className="bg-slate-900 text-white p-4 shadow-md flex flex-wrap justify-between items-center z-20 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl font-bold tracking-tight">Estructuras de Datos: Árboles</span>
+                        </div>
+                        <div className="flex items-center bg-slate-800 p-1.5 rounded-lg border border-slate-700 text-sm mt-2 sm:mt-0">
+                            <span className="px-3 text-slate-400 text-xs uppercase font-bold tracking-wider">Estructura:</span>
+                            {['general', 'binary', 'bst'].map(t => (
+                                <button key={t} onClick={() => setTreeType(t)} disabled={activeTab === 'quiz'}
+                                    className={`px-4 py-1.5 rounded-md transition-all ${treeType === t ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-slate-300 hover:bg-slate-700 disabled:opacity-50'}`}>
+                                    {t === 'general' ? 'General' : t === 'binary' ? 'Binario' : 'BST'}
+                                </button>
+                            ))}
+                        </div>
+                    </header>
+
+                    {/* Tabs Navigation */}
+                    <div className="bg-white border-b border-slate-200 flex justify-center text-sm shadow-sm z-10 overflow-x-auto shrink-0">
+                        {[
+                            { id: 'conceptos', label: '1. Conceptos Base' },
+                            { id: 'recorridos', label: '2. Recorridos & Call Stack' },
+                            { id: 'busqueda', label: '3. Búsqueda (O(n) vs O(log n))' },
+                            { id: 'quiz', label: '4. Test de Conocimiento' }
+                        ].map(tab => (
+                            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setIsPlaying(false); }}
+                                className={`px-6 py-3 border-b-[3px] font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <main className="flex flex-1 overflow-hidden relative flex-col md:flex-row bg-white">
+                        
+                        {/* PANEL IZQUIERDO: Visualizador SVG (Oculto en Quiz) */}
+                        {activeTab !== 'quiz' && (
+                            <div className="w-full md:w-3/5 bg-slate-50 border-r border-slate-200 flex flex-col relative">
+                                {/* Controles de inserción en el lienzo */}
+                                <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                                    <form onSubmit={handleInsert} className="flex bg-white shadow-md rounded-lg overflow-hidden border border-slate-300">
+                                        <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)}
+                                            placeholder="Insertar nodo..." className="w-32 px-3 py-2 text-sm outline-none font-medium" required />
+                                        <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 flex items-center transition-colors">
+                                            <IconPlus/>
+                                        </button>
+                                    </form>
+                                    {insertError && (
+                                        <div className="bg-rose-100 text-rose-700 text-xs font-bold p-2 rounded-lg border border-rose-300 shadow-sm flex items-center gap-1">
+                                            <IconAlert/> {insertError}
+                                        </div>
+                                    )}
+                                    <div className="bg-white/95 backdrop-blur text-xs p-3 rounded-lg shadow-sm border border-slate-200 max-w-[240px] text-slate-600 font-medium">
+                                        {treeType === 'bst' && "BST: Valores menores se envían al subárbol izquierdo, mayores al derecho."}
+                                        {treeType === 'binary' && "Binario: Inserción por niveles (Level Order), strictly de izquierda a derecha."}
+                                        {treeType === 'general' && "General: Inserción por niveles. Cada nodo acepta múltiples hijos."}
+                                    </div>
+                                </div>
+
+                                {treeType === 'general' && (
+                                    <div className="absolute top-4 right-4 z-10 bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg max-w-[280px] shadow-sm flex gap-2">
+                                        <div className="mt-0.5"><IconAlert/></div>
+                                        <p><strong>Nota estructural:</strong> Visualmente hemos limitado a <strong>3 hijos por nodo</strong> para que quepa en pantalla, pero formalmente un árbol general no tiene límites de hijos.</p>
+                                    </div>
+                                )}
+
+                                {/* Lienzo SVG */}
+                                <div className="flex-1 w-full h-full flex items-center justify-center overflow-auto p-4 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px]">
+                                    <svg viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`} className="min-w-[700px] w-full h-full drop-shadow-sm">
+                                        {allEdgesList.map((edge) => (
+                                            <line key={`edge-${edge.from.id}-${edge.to.id}`} x1={edge.from.x} y1={edge.from.y} x2={edge.to.x} y2={edge.to.y} 
+                                                className={`transition-all duration-300 ${activeTab === 'busqueda' && currentStep?.discarded?.includes(edge.to.id) ? 'stroke-slate-200 stroke-[1px] opacity-40' : 'stroke-slate-400 stroke-[2.5px]'}`} />
+                                        ))}
+                                        {allNodesList.map((node) => {
+                                            const status = isNodeHighlighted(node);
+                                            const isClickable = activeTab === 'conceptos' && activeConcept === 'asc_desc';
+                                            return (
+                                                <g key={`node-${node.id}`} transform={`translate(${node.x}, ${node.y})`}
+                                                    onClick={() => isClickable && setSelectedNodeId(node.id)} className={isClickable ? 'cursor-pointer' : ''}>
+                                                    {(status === 'current' || status === 'found') && <circle r="26" className="fill-blue-400/30 pulse-node" />}
+                                                    <circle r="18" className={`stroke-[2.5px] transition-all duration-300 ${getNodeColor(status)}`} />
+                                                    <text textAnchor="middle" dy=".3em" className={`text-sm font-bold pointer-events-none transition-colors duration-300 ${status === 'discarded' ? 'fill-slate-400' : 'fill-slate-800'}`}>
+                                                        {node.id}
+                                                    </text>
+                                                </g>
+                                            );
+                                        })}
+                                    </svg>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PANEL DERECHO: Controles y Herramientas */}
+                        <div className={`flex flex-col h-full bg-white overflow-y-auto ${activeTab === 'quiz' ? 'w-full max-w-4xl mx-auto' : 'w-full md:w-2/5 border-l'}`}>
+                            
+                            {}
+                            {activeTab === 'conceptos' && (
+                                <div className="p-6 space-y-5">
+                                    <h2 className="text-xl font-extrabold text-slate-800 border-b pb-3">Conceptos Estructurales</h2>
+                                    <p className="text-sm text-slate-600">Selecciona un concepto para resaltarlo visualmente. Comprender la anatomía es vital para los recorridos.</p>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {[
+                                            { id: 'raiz', label: 'Nodo Raíz (Root)', desc: 'Único nodo sin padre (Nivel 0).' },
+                                            { id: 'hoja', label: 'Nodos Hoja (Leaf)', desc: 'Nodos terminales, sin hijos.' },
+                                            { id: 'interno', label: 'Nodos Internos', desc: 'Tienen al menos un hijo, actuando como puentes.' },
+                                            { id: 'profundidad', label: 'Profundidad / Niveles', desc: 'Distancia en aristas desde la raíz al nodo.' }
+                                        ].map(c => (
+                                            <button key={c.id} onClick={() => { setActiveConcept(c.id); setSelectedNodeId(null); }}
+                                                className={`flex flex-col items-start p-4 rounded-xl border transition-all ${activeConcept === c.id ? 'bg-amber-50 border-amber-400 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200'}`}>
+                                                <span className={`font-bold ${activeConcept === c.id ? 'text-amber-900' : 'text-slate-700'}`}>{c.label}</span>
+                                                <span className="text-xs text-slate-500 mt-1">{c.desc}</span>
+                                            </button>
+                                        ))}
+                                        <div className={`p-4 rounded-xl border mt-2 ${activeConcept === 'asc_desc' ? 'bg-rose-50 border-rose-400' : 'bg-slate-50 border-slate-200'}`}>
+                                            <button onClick={() => { setActiveConcept('asc_desc'); setSelectedNodeId(null); }}
+                                                className="font-bold text-left w-full text-slate-700">Ascendencia y Descendencia</button>
+                                            {activeConcept === 'asc_desc' && (
+                                                <div className="mt-3 text-sm bg-white p-3 rounded-lg shadow-inner">
+                                                    <span className="text-rose-600 font-bold mr-1">►</span> Haz clic en un nodo en el lienzo.<br/><br/>
+                                                    <span className="flex items-center gap-2 text-fuchsia-800 bg-fuchsia-50 p-1 rounded"><div className="w-3 h-3 bg-fuchsia-300 rounded-full border border-fuchsia-600"></div> Ancestros</span>
+                                                    <span className="flex items-center gap-2 text-orange-800 bg-orange-50 p-1 rounded mt-1"><div className="w-3 h-3 bg-orange-300 rounded-full border border-orange-600"></div> Descendientes</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {}
+                            {activeTab === 'recorridos' && (
+                                <div className="flex flex-col h-full bg-slate-50">
+                                    <div className="p-5 bg-white border-b border-slate-200 space-y-4">
+                                        <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                                            {['pre', 'in', 'post'].map(t => (
+                                                <button key={t} onClick={() => setSimType(t)} disabled={t === 'in' && treeType === 'general'}
+                                                    className={`flex-1 py-2 text-sm rounded-md font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${simType === t ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-500'}`}>
+                                                    {t.toUpperCase()}ORDEN
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-2 bg-slate-800 p-2.5 rounded-xl shadow-inner">
+                                            <button onClick={startTraversal} className="px-4 py-1.5 text-sm rounded-lg font-bold text-white bg-emerald-500 hover:bg-emerald-400">Simular</button>
+                                            <button onClick={() => setCurrentStepIndex(0)} className="p-1.5 text-slate-300 hover:text-white"><IconRefresh/></button>
+                                            <button onClick={() => setCurrentStepIndex(p => Math.max(0, p - 1))} className="p-1.5 text-slate-300 hover:text-white"><IconSkipBack/></button>
+                                            <button onClick={() => simSteps.length > 0 && setIsPlaying(!isPlaying)} className={`p-1.5 rounded-full text-white ${isPlaying ? 'bg-rose-500' : 'bg-blue-500'}`}>
+                                                {isPlaying ? <IconPause/> : <IconPlay/>}
+                                            </button>
+                                            <button onClick={() => setCurrentStepIndex(p => Math.min(simSteps.length - 1, p + 1))} className="p-1.5 text-slate-300 hover:text-white"><IconSkipForward/></button>
+                                            <div className="ml-auto text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded">{simSteps.length ? `${currentStepIndex}/${simSteps.length - 1}` : '-'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                                        <div className="text-sm font-semibold text-blue-900 bg-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
+                                            {currentStep ? currentStep.desc : 'Presiona "Simular" para iniciar el recorrido recursivo.'}
+                                        </div>
+                                        <div className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col h-48">
+                                            <div className="bg-slate-100 px-3 py-2 text-xs font-extrabold text-slate-700 flex justify-between border-b">
+                                                <span>PILA DE LLAMADAS (CALL STACK)</span>
+                                                <span className="bg-indigo-200 text-indigo-800 px-2 rounded-full">{currentStep?.stack?.length || 0} Frames</span>
+                                            </div>
+                                            <div className="p-2 flex flex-col-reverse overflow-y-auto bg-slate-50 flex-1 gap-1">
+                                                {currentStep?.stack?.map((frame, idx) => (
+                                                    <div key={idx} className={`px-2 py-1 text-sm font-mono rounded border ${idx === currentStep.stack.length - 1 ? 'bg-indigo-100 border-indigo-300 text-indigo-900 font-bold' : 'bg-white text-slate-500'}`}>
+                                                        {frame}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-[#1e1e1e] rounded-xl overflow-hidden shadow-sm flex flex-col h-48">
+                                            <div className="bg-[#2d2d2d] px-3 py-2 text-xs font-mono text-slate-300 flex justify-between border-b border-slate-700">
+                                                <span className="font-bold">PSEUDOCÓDIGO ({treeType})</span>
+                                                <span className="text-emerald-400 font-bold bg-black px-2 py-0.5 rounded">curr = {currentStep?.current !== null ? currentStep?.current : 'null'}</span>
+                                            </div>
+                                            <div className="p-3 font-mono text-[13px] overflow-y-auto">
+                                                {getPseudocode(simType, treeType).map((line, idx) => (
+                                                    <div key={idx} className={`px-2 py-0.5 rounded ${currentStep?.line === (idx + 1) ? 'bg-blue-500/40 text-white font-bold border-l-2 border-blue-400' : 'text-slate-400'}`}>
+                                                        {line.replace(/ /g, '\u00a0')}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {}
+                            {activeTab === 'busqueda' && (
+                                <div className="flex flex-col h-full bg-slate-50">
+                                    <div className="p-6 bg-white border-b border-slate-200 space-y-4">
+                                        <p className="text-sm text-slate-600">
+                                            {treeType === 'bst' ? "Búsqueda Binaria O(log n): Compara y descarta subárboles completos." : "Búsqueda Lineal O(n): Al no estar ordenado, revisa nodo por nodo (BFS/Niveles)."}
+                                        </p>
+                                        <form onSubmit={startSearch} className="flex gap-3">
+                                            <input type="number" value={searchValue} onChange={e => setSearchValue(e.target.value)}
+                                                placeholder="Buscar..." className="flex-1 px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" required />
+                                            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-lg font-bold shadow-md">Buscar</button>
+                                        </form>
+                                        {searchSteps.length > 0 && (
+                                            <div className="flex items-center gap-3 bg-slate-800 p-2.5 rounded-xl shadow-inner">
+                                                <button onClick={() => setCurrentStepIndex(p => Math.max(0, p - 1))} className="text-slate-300"><IconSkipBack/></button>
+                                                <button onClick={() => setIsPlaying(!isPlaying)} className={`p-1.5 rounded-full text-white ${isPlaying ? 'bg-rose-500' : 'bg-blue-500'}`}>{isPlaying ? <IconPause/> : <IconPlay/>}</button>
+                                                <button onClick={() => setCurrentStepIndex(p => Math.min(searchSteps.length - 1, p + 1))} className="text-slate-300"><IconSkipForward/></button>
+                                                <span className="ml-auto text-xs font-mono font-bold bg-slate-900 text-white px-2 py-1 rounded">{currentStepIndex} / {searchSteps.length - 1}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 p-6 overflow-y-auto">
+                                        {currentStep && (
+                                            <div className={`p-5 rounded-xl border-2 shadow-sm ${currentStep.found ? 'bg-emerald-50 border-emerald-400' : currentStep.current === null ? 'bg-rose-50 border-rose-300' : 'bg-white border-blue-200'}`}>
+                                                <p className="text-slate-700 font-medium">{currentStep.desc}</p>
+                                                <div className="mt-4 flex gap-4 text-sm font-mono text-center">
+                                                    <div className="flex-1 p-3 bg-slate-100 rounded-lg border">
+                                                        <div className="text-slate-500 font-bold text-xs mb-1">OBJETIVO</div>
+                                                        <div className="font-extrabold text-indigo-700 text-xl">{searchValue}</div>
+                                                    </div>
+                                                    <div className="flex-1 p-3 bg-blue-50 rounded-lg border border-blue-200 shadow-inner">
+                                                        <div className="text-blue-500 font-bold text-xs mb-1">ACTUAL (current)</div>
+                                                        <div className="font-extrabold text-blue-700 text-xl">{currentStep.current !== null ? currentStep.current : 'NULL'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4 text-xs font-bold text-slate-500 bg-slate-100 p-2 rounded">
+                                                    {currentStep.algo === 'binary' ? `Nodos descartados por orden O(log n): ${currentStep.discarded.length}` : `Nodos revisados exhaustivamente O(n): ${currentStep.checked.length}`}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {}
+                            {activeTab === 'quiz' && (
+                                <div className="p-8 h-full overflow-y-auto flex flex-col">
+                                    {!quizStarted && !quizCompleted && (
+                                        <div className="flex flex-col items-center justify-center flex-1 text-center max-w-xl mx-auto">
+                                            <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6">
+                                                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                                            </div>
+                                            <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Evaluación Avanzada de Árboles</h2>
+                                            <p className="text-slate-600 mb-8 leading-relaxed">Este cuestionario contiene 15 preguntas avanzadas sobre gestión de memoria (Call Stack), rastreo de algoritmos y características estructurales de los árboles. Ideal para poner a prueba tu nivel de maestría.</p>
+                                            <button onClick={() => setQuizStarted(true)} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-transform transform hover:scale-105">
+                                                Iniciar Cuestionario
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {quizStarted && !quizCompleted && (
+                                        <div className="max-w-3xl mx-auto w-full">
+                                            <div className="flex justify-between text-sm font-bold text-slate-500 mb-4">
+                                                <span>Pregunta {currentQIndex + 1} de {QUIZ_QUESTIONS.length}</span>
+                                                <span>Puntuación: {score}</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 h-2 rounded-full mb-8 overflow-hidden">
+                                                <div className="bg-indigo-600 h-2 transition-all duration-500" style={{width: `${((currentQIndex)/QUIZ_QUESTIONS.length)*100}%`}}></div>
+                                            </div>
+                                            
+                                            <h3 className="text-xl font-bold text-slate-800 mb-6 leading-relaxed">{QUIZ_QUESTIONS[currentQIndex].q}</h3>
+                                            
+                                            <div className="space-y-3">
+                                                {QUIZ_QUESTIONS[currentQIndex].options.map((opt, idx) => {
+                                                    const isCorrect = idx === QUIZ_QUESTIONS[currentQIndex].answer;
+                                                    const isSelected = selectedAnswer === idx;
+                                                    let btnClass = "w-full text-left p-4 rounded-xl border-2 font-medium transition-all ";
+                                                    
+                                                    if (!showExplanation) {
+                                                        btnClass += "bg-white border-slate-200 hover:border-indigo-400 hover:bg-indigo-50";
+                                                    } else {
+                                                        if (isCorrect) btnClass += "bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm";
+                                                        else if (isSelected && !isCorrect) btnClass += "bg-rose-50 border-rose-500 text-rose-900";
+                                                        else btnClass += "bg-white border-slate-200 opacity-50";
+                                                    }
+
+                                                    return (
+                                                        <button key={idx} disabled={showExplanation} onClick={() => handleAnswerSelect(idx)} className={btnClass}>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="mt-0.5">
+                                                                    {showExplanation && isCorrect && <span className="text-emerald-500"><IconCheck/></span>}
+                                                                    {showExplanation && isSelected && !isCorrect && <span className="text-rose-500"><IconX/></span>}
+                                                                    {(!showExplanation || (!isSelected && !isCorrect)) && <div className="w-5 h-5 rounded-full border-2 border-slate-300"></div>}
+                                                                </div>
+                                                                <span>{opt}</span>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {showExplanation && (
+                                                <div className="mt-6 p-5 bg-indigo-50 border border-indigo-200 rounded-xl animate-fade-in">
+                                                    <strong className="text-indigo-800 block mb-2">Explicación:</strong>
+                                                    <p className="text-indigo-900 text-sm leading-relaxed">{QUIZ_QUESTIONS[currentQIndex].explanation}</p>
+                                                    <button onClick={nextQuestion} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg float-right">
+                                                        {currentQIndex === QUIZ_QUESTIONS.length - 1 ? 'Finalizar' : 'Siguiente'}
+                                                    </button>
+                                                    <div className="clear-both"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {quizCompleted && (
+                                        <div className="flex flex-col items-center justify-center flex-1 text-center max-w-xl mx-auto">
+                                            <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Cuestionario Finalizado</h2>
+                                            <div className="text-6xl font-black mb-2 text-indigo-600">{score} <span className="text-3xl text-slate-400">/ {QUIZ_QUESTIONS.length}</span></div>
+                                            <p className="text-slate-600 mb-8 font-medium">
+                                                {score === 15 ? "¡Perfecto! Eres un maestro de los árboles y la recursividad." : 
+                                                 score >= 10 ? "¡Muy buen trabajo! Tienes una base teórica sólida." : 
+                                                 "Sigue practicando en el simulador para afianzar mejor los conceptos del Call Stack y recorridos."}
+                                            </p>
+                                            <button onClick={resetQuiz} className="px-8 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md flex gap-2 items-center">
+                                                <IconRefresh/> Reintentar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const rootElement = document.getElementById('root');
+        ReactDOM.createRoot(rootElement).render(<App />);
+    </script>
+</body>
+</html>
