@@ -8,3 +8,6 @@
 | EJ-004 | LC 2000 | Invertir el prefijo hasta la primera aparición de un carácter usando una pila | material_de_apoyo/parciales_anteriores/mixtos |
 | EJ-005 | LC 2289 | Pasos de eliminación simultánea de nodos menores que su anterior: simulación en lista enlazada revisando solo vecinos afectados, o pila monótona con el paso en que cae cada elemento | material_de_apoyo/parciales_anteriores/mixtos |
 | EJ-006 | LC 725 | Partir una lista enlazada en k partes consecutivas de tamaños n//k (+1 para las primeras n%k) cortando enlaces | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-007 | LC 21 (var.) | Mezclar recursivamente dos listas de Python ordenadas comparando las cabezas y avanzando en la que tiene el menor | material_de_apoyo/parciales_anteriores/recursion |
+| EJ-008 | LC 233 | Contar los dígitos 1 de 0 a n descomponiendo por el dígito más significativo (o por posición decimal) sin convertir a cadena | material_de_apoyo/parciales_anteriores/recursion |
+| EJ-009 | Semilla del profesor | Recorrer recursivamente una lista de cadenas tomando el carácter k de cada una o "XXX" si la posición no existe | material_de_apoyo/parciales_anteriores/recursion |
