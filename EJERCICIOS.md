@@ -17,3 +17,5 @@
 | EJ-013 | Propio (monitoría) | Recorrer una matriz en zigzag por filas con recursión que lleva fila, columna y dirección | 06_recursion |
 | EJ-014 | Propio (monitoría) | Eliminar vocales cuyos vecinos izquierdo y derecho son la misma consonante, recorriendo con índice | 06_recursion |
 | EJ-015 | Propio (monitoría) | Verificar que los dígitos de n alternan paridad comparando el último dígito con el siguiente vía % 10 y // 10 | 06_recursion |
+| EJ-016 | Propio (monitoría) | Determinar la complejidad O de cinco fragmentos de código (acceso directo, recorrido, doble ciclo, división por 2, suma de partes) | 04_listas_enlazadas |
+| EJ-017 | Propio (monitoría) | Completar la lista simplemente enlazada con head/tail/size: append en O(1), borrar primero y último manejando lista vacía y de un elemento | 04_listas_enlazadas |
