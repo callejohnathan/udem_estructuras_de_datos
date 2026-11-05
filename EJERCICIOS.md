@@ -21,3 +21,5 @@
 | EJ-017 | Propio (monitoría) | Completar la lista simplemente enlazada con head/tail/size: append en O(1), borrar primero y último manejando lista vacía y de un elemento | 04_listas_enlazadas |
 | EJ-018 | Semilla del profesor | Enumerar todos los caminos simples (cualquier origen, ≥1 arista) de un grafo dirigido ponderado cuyo peso suma exactamente K, con DFS y backtracking podando cuando la suma supera K | 08_grafos |
 | EJ-019 | Semilla del profesor | En un grafo dirigido no ponderado, calcular distancias mínimas en aristas desde N (BFS) y eliminar los nodos a distancia exactamente K junto con sus aristas entrantes y salientes | 08_grafos |
+| EJ-020 | Propio | Construir a mano el árbol de Huffman de una palabra corta con desempate por (frecuencia, menor carácter Unicode del subárbol), y obtener códigos, bits, bytes con relleno y L | material_de_apoyo/practicas_anteriores/arboles/practica_arboles_20262 |
+| EJ-021 | Semilla del profesor | Recorrer por niveles (BFS con cola) el árbol de Huffman generado y mostrar los nodos de cada nivel de izquierda a derecha | material_de_apoyo/practicas_anteriores/arboles/practica_arboles_20262 |

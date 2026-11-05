@@ -1,0 +1,2 @@
+# Los valores esperados dependen de los bytes exactos: Git no debe convertir los saltos de línea.
+*.txt -text
