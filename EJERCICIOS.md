@@ -23,3 +23,9 @@
 | EJ-019 | Semilla del profesor | En un grafo dirigido no ponderado, calcular distancias mínimas en aristas desde N (BFS) y eliminar los nodos a distancia exactamente K junto con sus aristas entrantes y salientes | 08_grafos |
 | EJ-020 | Propio | Construir a mano el árbol de Huffman de una palabra corta con desempate por (frecuencia, menor carácter Unicode del subárbol), y obtener códigos, bits, bytes con relleno y L | material_de_apoyo/practicas_anteriores/arboles/practica_arboles_20262 |
 | EJ-021 | Semilla del profesor | Recorrer por niveles (BFS con cola) el árbol de Huffman generado y mostrar los nodos de cada nivel de izquierda a derecha | material_de_apoyo/practicas_anteriores/arboles/practica_arboles_20262 |
+| EJ-022 | LC 1342 (var.) | Reducir n recursivamente (par: n//2; impar: n-1) acumulando la secuencia de valores hasta 0 | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-023 | LC 394 (var.) | Calcular la longitud de una cadena con repeticiones anidadas k[...] sin expandirla: cada bloque resuelve su contenido por recursión y multiplica | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-024 | LC 2243 (var.) | Rondas de reemplazo de bloques de k dígitos por su suma, con recursión anidada por rondas, bloques y dígitos, devolviendo cada ronda | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-025 | LC 938 (var.) | Suma y cantidad de valores de un BST en [L, R], descartando subárboles según el orden del BST | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-026 | LC 543 (var.) | Diámetro de un árbol general: en cada nodo combinar las dos alturas mayores de sus hijos mientras la recursión devuelve la altura | material_de_apoyo/parciales_anteriores/mixtos |
+| EJ-027 | LC 2641 (var.) | Reemplazar cada nodo por el máximo de sus primos: BFS por niveles guardando los máximos de las dos mejores familias de cada nivel | material_de_apoyo/parciales_anteriores/mixtos |
